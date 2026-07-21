@@ -120,8 +120,9 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
         minors     = raw[5]
         pid_base   = 6
 
-    # Per-process arrays (only present when with_procs=True)
-    if with_procs:
+    # Per-process arrays (only present when with_procs=True AND the underlying call
+    # actually returned them).
+    if with_procs and len(raw) >= pid_base + 6:
         num_pids_mem      = raw[pid_base]
         pids_mem          = raw[pid_base + 1]   # shape (count, max_pids)
         used_gpu_memorys  = raw[pid_base + 2]   # shape (count, max_pids)
@@ -181,15 +182,17 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
             procs=procs_i,
         ))
 
-    return _expand_mig_slots(slots, with_usage=with_usage)
+    return _expand_mig_slots(slots, with_usage=with_usage, with_procs=with_procs)
 
 
 def _expand_mig_slots(physical_slots: List[GpuSlot],
-                      with_usage: bool = True) -> List[GpuSlot]:
+                      with_usage: bool = True,
+                      with_procs: bool = False) -> List[GpuSlot]:
     """
-    Splice MIG instances into the slot table with per-MIG util.
+    Splice MIG instances into the slot table with per-MIG util (and per-MIG processes
+    when with_procs=True).
     """
-    mig_by_phys = _mig_instances_by_physical()
+    mig_by_phys = _mig_instances_by_physical(with_procs=with_procs)
     if not mig_by_phys:
         return physical_slots
 
@@ -215,14 +218,18 @@ def _expand_mig_slots(physical_slots: List[GpuSlot],
                 mem_free=m["mem_free"],
                 utilization=util,       
                 physical_index=slot.physical_index,
-                procs=None,
+                procs=([ProcInfo(pid=p[0], used_mem=p[1], usage=0) for p in m["procs"]]
+                       if m.get("procs") else None),
             ))
 
     return [replace(s, slot_index=i) for i, s in enumerate(expanded)]
 
 
-def _mig_instances_by_physical() -> Dict[int, List[dict]]:
+def _mig_instances_by_physical(with_procs: bool = False) -> Dict[int, List[dict]]:
     """Enumerate MIG instances per physical GPU via the driver's NVML (ctypes).
+
+    ``with_procs=True`` also attaches each instance's running processes as
+    ``"procs": [(pid, used_mem_bytes), ...]``.
 
     Returns ``{physical_index: [mig_dict, ...]}`` sorted by ``(gi, ci)``; empty dict
     when NVML can't load, MIG is off everywhere, or anything goes wrong (fail soft).
@@ -234,6 +241,16 @@ def _mig_instances_by_physical() -> Dict[int, List[dict]]:
                     ("free", ctypes.c_ulonglong),
                     ("used", ctypes.c_ulonglong)]
 
+    class _ProcV2(ctypes.Structure):   # nvmlProcessInfo_v2_t (used by _v3/_v2 symbols)
+        _fields_ = [("pid", ctypes.c_uint),
+                    ("usedGpuMemory", ctypes.c_ulonglong),
+                    ("gpuInstanceId", ctypes.c_uint),
+                    ("computeInstanceId", ctypes.c_uint)]
+
+    class _ProcV1(ctypes.Structure):   # legacy nvmlProcessInfo_t (base symbol, 2 fields)
+        _fields_ = [("pid", ctypes.c_uint),
+                    ("usedGpuMemory", ctypes.c_ulonglong)]
+
     NVML_SUCCESS = 0
     NVML_ERROR_NOT_FOUND = 6
     NVML_DEVICE_MIG_ENABLE = 1
@@ -242,6 +259,32 @@ def _mig_instances_by_physical() -> Dict[int, List[dict]]:
         nvml = ctypes.CDLL("libnvidia-ml.so.1")
     except OSError:
         return {}
+
+    def _procs_for(mdev):
+        # Running processes on one MIG device handle -> [(pid, used_mem_bytes), ...].
+        if not with_procs:
+            return None
+        # Each symbol writes a specific struct: _v3/_v2 use the 4-field v2 layout;
+        # the legacy base symbol writes the 2-field v1 layout (16-byte stride).
+        for sym, struct in (("nvmlDeviceGetComputeRunningProcesses_v3", _ProcV2),
+                            ("nvmlDeviceGetComputeRunningProcesses_v2", _ProcV2),
+                            ("nvmlDeviceGetComputeRunningProcesses", _ProcV1)):
+            fn = getattr(nvml, sym, None)
+            if fn is None:
+                continue
+            try:
+                cnt = ctypes.c_uint(0)
+                fn(mdev, ctypes.byref(cnt), None)          # query required count
+                if cnt.value == 0:
+                    return []
+                arr = (struct * cnt.value)()
+                if fn(mdev, ctypes.byref(cnt), arr) != NVML_SUCCESS:
+                    continue
+                return [(int(arr[i].pid), int(arr[i].usedGpuMemory))
+                        for i in range(cnt.value)]
+            except Exception:
+                continue
+        return []
 
     def _u32():
         return ctypes.c_uint(0)
@@ -275,7 +318,7 @@ def _mig_instances_by_physical() -> Dict[int, List[dict]]:
                 mdev = ctypes.c_void_p()
                 rv = nvml.nvmlDeviceGetMigDeviceHandleByIndex(dev, idx, ctypes.byref(mdev))
                 if rv == NVML_ERROR_NOT_FOUND:
-                    continue                      # sparse index — no instance here
+                    continue                      
                 if rv != NVML_SUCCESS:
                     continue
 
@@ -297,6 +340,7 @@ def _mig_instances_by_physical() -> Dict[int, List[dict]]:
                     "cc": (int(maj.value), int(minr.value)),
                     "gi": int(gi.value),
                     "ci": int(ci.value),
+                    "procs": _procs_for(mdev),
                 })
 
             if migs:
@@ -963,8 +1007,6 @@ def get_gpu_info_c(return_memory=False, return_name=False, return_usage=False,
         return_memory_by_pid->num_pids, pids, usedGpuMemorys;
         return_usage_by_pid->num_pids_usage, pids_usage, usedGpuUsage.
     """
-    # No MIG anywhere -> the physical tuple already IS the slot tuple (identical output,
-    # including per-pid arrays). This keeps non-MIG behaviour byte-for-byte unchanged.
     if not _mig_instances_by_physical():
         return _get_gpu_info_c_physical(
             return_memory=return_memory, return_name=return_name, return_usage=return_usage,
@@ -1079,8 +1121,6 @@ def get_compute_capability_orig(gpu_id):
     import concurrent.futures
     from concurrent.futures import ProcessPoolExecutor
     res = None
-    # sometimes hit broken process pool in cpu mode,
-    # so return dummy values in that case
     try:
         with ProcessPoolExecutor(max_workers=1) as executor:
             future = executor.submit(get_compute_capability_subprocess, gpu_id)
