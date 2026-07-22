@@ -4,7 +4,677 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import os
+import ctypes as _ct
+from contextlib import contextmanager
+from dataclasses import dataclass, replace
+from typing import Dict, List, Optional, Tuple
 import numpy as np
+
+
+# ---------------------------------------------------------------------------
+# GPU Slot model
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ProcInfo:
+    """Per-process GPU resource usage for one device slot."""
+    pid: int
+    used_mem: int   # bytes
+    usage: int      # percent
+
+
+@dataclass(frozen=True)
+class GpuSlot:
+    """
+    Unified, ordered descriptor for one GPU slot (physical GPU or MIG instance).
+    """
+    slot_index: int                    # 0..N-1 — identity / AcquireGPUs lock key
+    cuda_token: str                    # CUDA_VISIBLE_DEVICES value: "i" (physical) or "MIG-<uuid>" (mig)
+    kind: str                          # "physical" | "mig"
+    groupable: bool                    # True=physical (combinable), False=mig (alone)
+    name: str
+    compute_capability: Tuple[int, int]
+    mem_total: int                     # bytes
+    mem_used: int                      # bytes  (mem_total - mem_free)
+    mem_free: int                      # bytes
+    utilization: int                   # percent (0 when with_usage=False)
+    physical_index: int                # owning physical GPU (self for physical; parent for mig)
+    procs: Optional[List[ProcInfo]]    # per-process info when with_procs=True, else None
+
+
+def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[GpuSlot]:
+    """
+    Return one GpuSlot per visible GPU.
+
+    Tuple shape from get_gpu_info_c when called with the flags below:
+        [0]  count                          (int)
+        [1]  total_mems  (return_memory=True)
+        [2]  gpu_types   (return_name=True)
+        [3]  usages      (return_usage=with_usage)
+        [4]  free_mems   (return_free_memory=True)
+        [5]  majors      (return_capability=True)
+        [6]  minors      (return_capability=True)
+     if with_procs:
+        [7]  num_pids         (return_memory_by_pid=True)
+        [8]  pids             shape (count, max_pids)
+        [9]  usedGpuMemorys   shape (count, max_pids)
+        [10] num_pids_usage   (return_usage_by_pid=True)
+        [11] pids_usage       shape (count, max_pids)
+        [12] usedGpuUsage     shape (count, max_pids)
+    """
+    want_procs = with_procs   # preserved for the MIG fallback (the physical retry may clear with_procs)
+    raw = _get_gpu_info_c_physical(
+        return_memory=True,
+        return_name=True,
+        return_usage=with_usage,
+        return_free_memory=True,
+        return_capability=True,
+        return_memory_by_pid=with_procs,
+        return_usage_by_pid=with_procs,
+        return_all=False,
+    )
+
+    if raw is None and with_procs:
+        with_procs = False
+        raw = _get_gpu_info_c_physical(
+            return_memory=True,
+            return_name=True,
+            return_usage=with_usage,
+            return_free_memory=True,
+            return_capability=True,
+            return_memory_by_pid=False,
+            return_usage_by_pid=False,
+            return_all=False,
+        )
+
+    if raw is None or raw[0] == 0:
+        # Physical enumeration is unavailable (e.g. a MIG-only container, where the parent
+        # GPU's aggregate nvmlDeviceGetMemoryInfo returns NOT_SUPPORTED and the C call bails).
+        # The per-MIG-device NVML path still works, so build slots straight from the MIG
+        # instances instead of dropping them.
+        mig_by_phys = _mig_instances_by_physical(with_procs=want_procs)
+        if not mig_by_phys:
+            return []
+        placeholders = [
+            GpuSlot(slot_index=i, cuda_token=str(pidx), kind="physical", groupable=True,
+                    name="", compute_capability=(0, 0), mem_total=0, mem_used=0,
+                    mem_free=0, utilization=0, physical_index=pidx, procs=None)
+            for i, pidx in enumerate(sorted(mig_by_phys.keys()))
+        ]
+        return _expand_mig_slots(placeholders, with_usage=with_usage,
+                                 with_procs=want_procs, mig_by_phys=mig_by_phys)
+
+    count = raw[0]
+
+    # Unpack positional tuple elements (indices depend on which flags were set).
+    # Flags always set: memory, name, usage (conditional), free_memory, capability.
+    # Index 0  = count (always)
+    # Index 1  = total_mems (return_memory=True, always)
+    # Index 2  = gpu_types  (return_name=True, always)
+    # Index 3  = usages     (return_usage=with_usage)
+    # Index 4  = free_mems  (return_free_memory=True, always)
+    # Index 5  = majors     (return_capability=True, always)
+    # Index 6  = minors     (return_capability=True, always)
+    # When with_usage=False, indices shift: [3]=free_mems, [4]=majors, [5]=minors
+    if with_usage:
+        total_mems = raw[1]
+        gpu_types  = raw[2]
+        usages     = raw[3]
+        free_mems  = raw[4]
+        majors     = raw[5]
+        minors     = raw[6]
+        pid_base   = 7
+    else:
+        total_mems = raw[1]
+        gpu_types  = raw[2]
+        usages     = None
+        free_mems  = raw[3]
+        majors     = raw[4]
+        minors     = raw[5]
+        pid_base   = 6
+
+    # Per-process arrays (only present when with_procs=True AND the underlying call
+    # actually returned them).
+    if with_procs and len(raw) >= pid_base + 6:
+        num_pids_mem      = raw[pid_base]
+        pids_mem          = raw[pid_base + 1]   # shape (count, max_pids)
+        used_gpu_memorys  = raw[pid_base + 2]   # shape (count, max_pids)
+        num_pids_usage    = raw[pid_base + 3]
+        pids_usage_arr    = raw[pid_base + 4]   # shape (count, max_pids)
+        used_gpu_usage    = raw[pid_base + 5]   # shape (count, max_pids)
+    else:
+        num_pids_mem = num_pids_usage = None
+        pids_mem = used_gpu_memorys = pids_usage_arr = used_gpu_usage = None
+
+    slots: List[GpuSlot] = []
+    for i in range(count):
+        mem_total_i = int(total_mems[i])
+        mem_free_i  = int(free_mems[i])
+        mem_used_i  = mem_total_i - mem_free_i
+
+        util_i = int(usages[i]) if usages is not None else 0
+
+        name_i = str(gpu_types[i]) if gpu_types[i] is not None else ""
+
+        cap_i = (int(majors[i]), int(minors[i]))
+
+        if with_procs and num_pids_mem is not None:
+            n_mem = int(num_pids_mem[i])
+            n_use = int(num_pids_usage[i])
+            pid_mem_map = {}
+            for k in range(n_mem):
+                pid = int(pids_mem[i, k])
+                used = int(used_gpu_memorys[i, k])
+                pid_mem_map[pid] = [pid, used, 0]
+            for k in range(n_use):
+                pid = int(pids_usage_arr[i, k])
+                usage_val = int(used_gpu_usage[i, k])
+                if pid in pid_mem_map:
+                    pid_mem_map[pid][2] = usage_val
+                else:
+                    pid_mem_map[pid] = [pid, 0, usage_val]
+            procs_i: Optional[List[ProcInfo]] = [
+                ProcInfo(pid=p[0], used_mem=p[1], usage=p[2])
+                for p in pid_mem_map.values()
+            ]
+        else:
+            procs_i = None
+
+        slots.append(GpuSlot(
+            slot_index=i,
+            cuda_token=str(i),
+            kind="physical",
+            groupable=True,
+            name=name_i,
+            compute_capability=cap_i,
+            mem_total=mem_total_i,
+            mem_used=mem_used_i,
+            mem_free=mem_free_i,
+            utilization=util_i,
+            physical_index=i,
+            procs=procs_i,
+        ))
+
+    return _expand_mig_slots(slots, with_usage=with_usage, with_procs=with_procs)
+
+
+def _expand_mig_slots(physical_slots: List[GpuSlot],
+                      with_usage: bool = True,
+                      with_procs: bool = False,
+                      mig_by_phys: Optional[Dict[int, List[dict]]] = None) -> List[GpuSlot]:
+    """
+    Splice MIG instances into the slot table with per-MIG util (and per-MIG processes
+    when with_procs=True).  ``mig_by_phys`` may be passed in to avoid re-enumerating.
+    """
+    if mig_by_phys is None:
+        mig_by_phys = _mig_instances_by_physical(with_procs=with_procs)
+    if not mig_by_phys:
+        return physical_slots
+
+    util_by_gi = _mig_utilization(mig_by_phys) if with_usage else {}
+
+    expanded: List[GpuSlot] = []
+    for slot in physical_slots:
+        migs = mig_by_phys.get(slot.physical_index)
+        if not migs:
+            expanded.append(slot)          
+            continue
+        for m in migs:                     
+            util = int(util_by_gi.get((slot.physical_index, m["gi"]), 0))
+            expanded.append(GpuSlot(
+                slot_index=-1,             
+                cuda_token=m["uuid"],    
+                kind="mig",
+                groupable=False,          
+                name=m["name"],
+                compute_capability=m["cc"],
+                mem_total=m["mem_total"],
+                mem_used=m["mem_total"] - m["mem_free"],
+                mem_free=m["mem_free"],
+                utilization=util,       
+                physical_index=slot.physical_index,
+                procs=([ProcInfo(pid=p[0], used_mem=p[1], usage=0) for p in m["procs"]]
+                       if m.get("procs") else None),
+            ))
+
+    return [replace(s, slot_index=i) for i, s in enumerate(expanded)]
+
+
+def _mig_instances_by_physical(with_procs: bool = False) -> Dict[int, List[dict]]:
+    """Enumerate MIG instances per physical GPU via the driver's NVML (ctypes).
+
+    ``with_procs=True`` also attaches each instance's running processes as
+    ``"procs": [(pid, used_mem_bytes), ...]``.
+
+    Returns ``{physical_index: [mig_dict, ...]}`` sorted by ``(gi, ci)``; empty dict
+    when NVML can't load, MIG is off everywhere, or anything goes wrong (fail soft).
+    """
+    import ctypes
+
+    class _Mem(ctypes.Structure):
+        _fields_ = [("total", ctypes.c_ulonglong),
+                    ("free", ctypes.c_ulonglong),
+                    ("used", ctypes.c_ulonglong)]
+
+    class _ProcV2(ctypes.Structure):   # nvmlProcessInfo_v2_t (used by _v3/_v2 symbols)
+        _fields_ = [("pid", ctypes.c_uint),
+                    ("usedGpuMemory", ctypes.c_ulonglong),
+                    ("gpuInstanceId", ctypes.c_uint),
+                    ("computeInstanceId", ctypes.c_uint)]
+
+    class _ProcV1(ctypes.Structure):   # legacy nvmlProcessInfo_t (base symbol, 2 fields)
+        _fields_ = [("pid", ctypes.c_uint),
+                    ("usedGpuMemory", ctypes.c_ulonglong)]
+
+    NVML_SUCCESS = 0
+    NVML_ERROR_NOT_FOUND = 6
+    NVML_DEVICE_MIG_ENABLE = 1
+
+    try:
+        nvml = ctypes.CDLL("libnvidia-ml.so.1")
+    except OSError:
+        return {}
+
+    def _procs_for(mdev):
+        # Running processes on one MIG device handle -> [(pid, used_mem_bytes), ...].
+        if not with_procs:
+            return None
+        # Each symbol writes a specific struct: _v3/_v2 use the 4-field v2 layout;
+        # the legacy base symbol writes the 2-field v1 layout (16-byte stride).
+        for sym, struct in (("nvmlDeviceGetComputeRunningProcesses_v3", _ProcV2),
+                            ("nvmlDeviceGetComputeRunningProcesses_v2", _ProcV2),
+                            ("nvmlDeviceGetComputeRunningProcesses", _ProcV1)):
+            fn = getattr(nvml, sym, None)
+            if fn is None:
+                continue
+            try:
+                cnt = ctypes.c_uint(0)
+                fn(mdev, ctypes.byref(cnt), None)          # query required count
+                if cnt.value == 0:
+                    return []
+                arr = (struct * cnt.value)()
+                if fn(mdev, ctypes.byref(cnt), arr) != NVML_SUCCESS:
+                    continue
+                return [(int(arr[i].pid), int(arr[i].usedGpuMemory))
+                        for i in range(cnt.value)]
+            except Exception:
+                continue
+        return []
+
+    def _u32():
+        return ctypes.c_uint(0)
+
+    result: Dict[int, List[dict]] = {}
+    if nvml.nvmlInit_v2() != NVML_SUCCESS:
+        return {}
+    try:
+        n = _u32()
+        if nvml.nvmlDeviceGetCount_v2(ctypes.byref(n)) != NVML_SUCCESS:
+            return {}
+        for phys in range(n.value):
+            dev = ctypes.c_void_p()
+            if nvml.nvmlDeviceGetHandleByIndex_v2(phys, ctypes.byref(dev)) != NVML_SUCCESS:
+                continue
+            cur, pend = _u32(), _u32()
+            if nvml.nvmlDeviceGetMigMode(dev, ctypes.byref(cur), ctypes.byref(pend)) != NVML_SUCCESS:
+                continue
+            if cur.value != NVML_DEVICE_MIG_ENABLE:
+                continue
+
+            maj, minr = ctypes.c_int(0), ctypes.c_int(0)   # MIG instances inherit parent CC
+            nvml.nvmlDeviceGetCudaComputeCapability(dev, ctypes.byref(maj), ctypes.byref(minr))
+
+            maxc = _u32()
+            if nvml.nvmlDeviceGetMaxMigDeviceCount(dev, ctypes.byref(maxc)) != NVML_SUCCESS:
+                continue
+
+            migs: List[dict] = []
+            for idx in range(maxc.value):
+                mdev = ctypes.c_void_p()
+                rv = nvml.nvmlDeviceGetMigDeviceHandleByIndex(dev, idx, ctypes.byref(mdev))
+                if rv == NVML_ERROR_NOT_FOUND:
+                    continue                      
+                if rv != NVML_SUCCESS:
+                    continue
+
+                uuid_buf = ctypes.create_string_buffer(96)
+                nvml.nvmlDeviceGetUUID(mdev, uuid_buf, 96)      # "MIG-<uuid>"
+                name_buf = ctypes.create_string_buffer(96)
+                nvml.nvmlDeviceGetName(mdev, name_buf, 96)
+                mem = _Mem()
+                nvml.nvmlDeviceGetMemoryInfo(mdev, ctypes.byref(mem))
+                gi, ci = _u32(), _u32()
+                nvml.nvmlDeviceGetGpuInstanceId(mdev, ctypes.byref(gi))
+                nvml.nvmlDeviceGetComputeInstanceId(mdev, ctypes.byref(ci))
+
+                migs.append({
+                    "uuid": uuid_buf.value.decode("utf-8", "replace"),
+                    "name": name_buf.value.decode("utf-8", "replace"),
+                    "mem_total": int(mem.total),
+                    "mem_free": int(mem.free),
+                    "cc": (int(maj.value), int(minr.value)),
+                    "gi": int(gi.value),
+                    "ci": int(ci.value),
+                    "procs": _procs_for(mdev),
+                })
+
+            if migs:
+                migs.sort(key=lambda m: (m["gi"], m["ci"]))
+                result[phys] = migs
+    finally:
+        nvml.nvmlShutdown()
+    return result
+
+
+def _mig_utilization(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int, int], int]:
+    """
+    Per-MIG utilization keyed by ``(physical_index, gpu_instance_id)``.
+    """
+    # TODO(B200): if nvmlGpmQueryDeviceSupport() is True for a MIG parent, use NVML GPM
+    #             for that GPU instead of DCGM. Until B200 hardware is available we take
+    #             the DCGM (Ampere) branch for every MIG-enabled GPU.
+    return _mig_utilization_dcgm(mig_by_phys)
+
+
+# ---------------------------------------------------------------------------
+# DCGM client for per-MIG utilization (GR_ENGINE_ACTIVE) — Ampere path.
+# Struct layouts / versions / enum values mirror the vendored headers in
+# third_party/dcgm (dcgm_structs.h, dcgm_fields.h, dcgm_agent.h).
+# ---------------------------------------------------------------------------
+
+_DCGM_ST_OK = 0
+_DCGM_FE_GPU_I = 4                        # dcgm_field_entity_group_t
+_DCGM_FI_PROF_GR_ENGINE_ACTIVE = 1001
+_DCGM_GROUP_DEFAULT_INSTANCES = 3         # dcgmGroupType_t: all GPU instances
+_DCGM_MAX_BLOB_LENGTH = 4096
+_DCGM_MAX_HIERARCHY_INFO = 32 * 14        # DCGM_MAX_NUM_DEVICES * DCGM_MAX_TOTAL_INSTANCES_PER_GPU
+
+
+def _dcgm_ver(struct_type, v):
+    return _ct.sizeof(struct_type) | (v << 24)   # MAKE_DCGM_VERSION
+
+
+class _DcgmConnectParams(_ct.Structure):
+    _fields_ = [("version", _ct.c_uint), ("persistAfterDisconnect", _ct.c_uint),
+                ("timeoutMs", _ct.c_uint), ("addressIsUnixSocket", _ct.c_uint)]
+
+
+class _DcgmEntityPair(_ct.Structure):
+    _fields_ = [("entityGroupId", _ct.c_int), ("entityId", _ct.c_uint)]
+
+
+class _DcgmFVUnion(_ct.Union):
+    _fields_ = [("i64", _ct.c_int64), ("dbl", _ct.c_double),
+                ("blob", _ct.c_char * _DCGM_MAX_BLOB_LENGTH)]
+
+
+class _DcgmFieldValue(_ct.Structure):
+    _fields_ = [("version", _ct.c_uint), ("entityGroupId", _ct.c_int),
+                ("entityId", _ct.c_uint), ("fieldId", _ct.c_ushort),
+                ("fieldType", _ct.c_ushort), ("status", _ct.c_int),
+                ("unused", _ct.c_uint), ("ts", _ct.c_int64), ("value", _DcgmFVUnion)]
+
+
+class _DcgmMigEntityInfo(_ct.Structure):
+    _fields_ = [("gpuUuid", _ct.c_char * 128), ("nvmlGpuIndex", _ct.c_uint),
+                ("nvmlInstanceId", _ct.c_uint), ("nvmlComputeInstanceId", _ct.c_uint),
+                ("nvmlMigProfileId", _ct.c_uint), ("nvmlProfileSlices", _ct.c_uint)]
+
+
+class _DcgmMigHierInfo(_ct.Structure):
+    _fields_ = [("entity", _DcgmEntityPair), ("parent", _DcgmEntityPair),
+                ("info", _DcgmMigEntityInfo)]
+
+
+class _DcgmMigHierarchy(_ct.Structure):
+    _fields_ = [("version", _ct.c_uint), ("count", _ct.c_uint),
+                ("entityList", _DcgmMigHierInfo * _DCGM_MAX_HIERARCHY_INFO)]
+
+
+def _load_dcgm():
+    """Load the bundled libdcgm.so.4.5.3 (host libdcgm.so.4 fallback); None if absent."""
+    import glob
+    libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib")
+    for cand in sorted(glob.glob(os.path.join(libdir, "libdcgm.so*"))) + ["libdcgm.so.4"]:
+        try:
+            return _ct.CDLL(cand)
+        except OSError:
+            continue
+    return None
+
+
+class _DcgmMigSession:
+    """
+    Persistent DCGM connection + GR_ENGINE_ACTIVE watch on the GPU-instances group.
+
+    ``open()`` connects to the standalone nv-hostengine and starts the watch once;
+    ``sample()`` then updates+reads cheaply (no reconnect); ``close()`` tears it down.
+    """
+
+    def __init__(self):
+        self._dcgm = None
+        self._handle = _ct.c_uint64(0)
+        self._connected = False
+        self.entity_to_key = {}          # dcgm GPU_I entityId -> (physical_index, gi)
+
+    def open(self):
+        dcgm = _load_dcgm()
+        if dcgm is None:
+            return False
+        from ctypes import (c_int, c_uint, c_uint64, c_longlong, c_double, c_ushort,
+                            c_char_p, POINTER)
+        dcgm.dcgmConnect_v2.argtypes = [c_char_p, POINTER(_DcgmConnectParams), POINTER(c_uint64)]
+        dcgm.dcgmGetGpuInstanceHierarchy.argtypes = [c_uint64, POINTER(_DcgmMigHierarchy)]
+        dcgm.dcgmFieldGroupCreate.argtypes = [c_uint64, c_int, POINTER(c_ushort), c_char_p,
+                                              POINTER(c_uint64)]
+        dcgm.dcgmGroupCreate.argtypes = [c_uint64, c_int, c_char_p, POINTER(c_uint64)]
+        dcgm.dcgmWatchFields.argtypes = [c_uint64, c_uint64, c_uint64, c_longlong, c_double, c_int]
+        dcgm.dcgmUpdateAllFields.argtypes = [c_uint64, c_int]
+        dcgm.dcgmEntitiesGetLatestValues.argtypes = [c_uint64, POINTER(_DcgmEntityPair), c_uint,
+                                                     POINTER(c_ushort), c_uint, c_uint,
+                                                     POINTER(_DcgmFieldValue)]
+        self._dcgm = dcgm
+        if dcgm.dcgmInit() != _DCGM_ST_OK:
+            self._dcgm = None
+            return False
+        address = os.environ.get("H2O4GPU_DCGM_DAEMON_ADDRESS", "127.0.0.1").encode("ascii")
+        params = _DcgmConnectParams(version=_dcgm_ver(_DcgmConnectParams, 2),
+                                    persistAfterDisconnect=0, timeoutMs=5000,
+                                    addressIsUnixSocket=0)
+        if dcgm.dcgmConnect_v2(address, _ct.byref(params), _ct.byref(self._handle)) != _DCGM_ST_OK:
+            self.close()
+            return False
+        self._connected = True
+        try:
+            hier = _DcgmMigHierarchy(version=_dcgm_ver(_DcgmMigHierarchy, 2))
+            if dcgm.dcgmGetGpuInstanceHierarchy(self._handle, _ct.byref(hier)) != _DCGM_ST_OK:
+                self.close()
+                return False
+            for k in range(hier.count):
+                e = hier.entityList[k]
+                if e.entity.entityGroupId == _DCGM_FE_GPU_I:
+                    self.entity_to_key[int(e.entity.entityId)] = (int(e.info.nvmlGpuIndex),
+                                                                  int(e.info.nvmlInstanceId))
+            if not self.entity_to_key:
+                self.close()
+                return False
+            fids = (c_ushort * 1)(_DCGM_FI_PROF_GR_ENGINE_ACTIVE)
+            field_group = c_uint64(0)
+            if dcgm.dcgmFieldGroupCreate(self._handle, 1, fids, b"h2o4gpu_mig_gract",
+                                         _ct.byref(field_group)) != _DCGM_ST_OK:
+                self.close()
+                return False
+            group = c_uint64(0)
+            if dcgm.dcgmGroupCreate(self._handle, _DCGM_GROUP_DEFAULT_INSTANCES, b"h2o4gpu_mig",
+                                    _ct.byref(group)) != _DCGM_ST_OK:
+                self.close()
+                return False
+            # 100ms updates; groups/watches auto-clean on dcgmDisconnect (persist=0).
+            if dcgm.dcgmWatchFields(self._handle, group, field_group,
+                                    100000, 5.0, 100) != _DCGM_ST_OK:
+                self.close()
+                return False
+            dcgm.dcgmUpdateAllFields(self._handle, 1)
+            return True
+        except Exception:
+            self.close()
+            return False
+
+    def sample(self):
+        """{(physical_index, gi): util%} from a fresh read of the watched GR_ENGINE_ACTIVE."""
+        if not self._connected or not self.entity_to_key:
+            return {}
+        from ctypes import c_ushort
+        dcgm = self._dcgm
+        try:
+            dcgm.dcgmUpdateAllFields(self._handle, 1)
+            ids = sorted(self.entity_to_key)
+            n = len(ids)
+            entities = (_DcgmEntityPair * n)(*[_DcgmEntityPair(_DCGM_FE_GPU_I, i) for i in ids])
+            fields = (c_ushort * 1)(_DCGM_FI_PROF_GR_ENGINE_ACTIVE)
+            values = (_DcgmFieldValue * n)()
+            for v in values:
+                v.version = _dcgm_ver(_DcgmFieldValue, 2)
+            if dcgm.dcgmEntitiesGetLatestValues(self._handle, entities, n, fields,
+                                                1, 0, values) != _DCGM_ST_OK:
+                return {}
+        except Exception:
+            return {}
+        out = {}
+        for j in range(n):
+            v = values[j]
+            if v.status != _DCGM_ST_OK:
+                continue
+            key = self.entity_to_key.get(int(v.entityId))
+            if key is None:
+                continue
+            frac = v.value.dbl                    # GR_ENGINE_ACTIVE is a 0.0..1.0 ratio
+            if frac != frac or frac < 0:          # NaN / blank sample -> treat as 0
+                frac = 0.0
+            out[key] = int(round(min(1.0, frac) * 100))
+        return out
+
+    def close(self):
+        dcgm = self._dcgm
+        if dcgm is None:
+            return
+        if self._connected:
+            try:
+                dcgm.dcgmDisconnect(self._handle)
+            except Exception:
+                pass
+            self._connected = False
+        try:
+            dcgm.dcgmShutdown()
+        except Exception:
+            pass
+        self._dcgm = None
+
+
+def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int, int], int]:
+    import time
+    session = _DcgmMigSession()
+    if not session.open():
+        return {}
+    try:
+        time.sleep(0.3)                           # let the profiling module post a sample
+        return session.sample()
+    finally:
+        session.close()
+
+
+# ---------------------------------------------------------------------------
+# gpu_utilization_watch() — persistent, low-overhead sampler
+# ---------------------------------------------------------------------------
+
+def _physical_utilization() -> Dict[int, int]:
+    """{physical_index: util%} for physical GPUs (NVML, via get_gpu_info_c)."""
+    raw = _get_gpu_info_c_physical(return_usage=True)
+    if not raw or raw[0] == 0:
+        return {}
+    usages = raw[1]
+    return {i: int(usages[i]) for i in range(raw[0])}
+
+
+def _physical_utilization_by_pid() -> Dict[int, List[Tuple[int, int]]]:
+    """{physical_index: [(pid, util%), ...]} for physical GPUs (via get_gpu_info_c)."""
+    raw = _get_gpu_info_c_physical(return_usage_by_pid=True)
+    if not raw or raw[0] == 0:
+        return {}
+    count, num, pids, used = raw[0], raw[1], raw[2], raw[3]
+    out: Dict[int, List[Tuple[int, int]]] = {}
+    for i in range(count):
+        m = int(num[i])
+        out[i] = [(int(pids[i, k]), int(used[i, k])) for k in range(m)]
+    return out
+
+
+class UtilSampler:
+    """
+    Repeated GPU-utilization sampler over the slot table.
+    """
+
+    def __init__(self, slots, requested, uuid_to_key, dcgm_session):
+        self._by_index = {s.slot_index: s for s in slots}
+        self._requested = [i for i in requested if i in self._by_index]
+        self._uuid_to_key = uuid_to_key           # MIG uuid -> (physical_index, gi)
+        self._dcgm = dcgm_session
+
+    def sample(self) -> Dict[int, int]:
+        """{slot_index: util%} for the requested slots."""
+        want = [self._by_index[i] for i in self._requested]
+        need_mig = any(s.kind == "mig" for s in want)
+        need_phys = any(s.kind == "physical" for s in want)
+        mig_util = self._dcgm.sample() if (need_mig and self._dcgm is not None) else {}
+        phys_util = _physical_utilization() if need_phys else {}
+        out: Dict[int, int] = {}
+        for s in want:
+            if s.kind == "mig":
+                key = self._uuid_to_key.get(s.cuda_token)
+                out[s.slot_index] = int(mig_util.get(key, 0)) if key is not None else 0
+            else:
+                out[s.slot_index] = int(phys_util.get(s.physical_index, 0))
+        return out
+
+    def sample_by_pid(self) -> Dict[int, List[Tuple[int, int]]]:
+        """{slot_index: [(pid, util%), ...]}.
+
+        Physical slots report per-process usage (via NVML). MIG slots report ``[]``:
+        GR_ENGINE_ACTIVE is per-GPU-instance, not per-process, so per-MIG per-pid
+        utilization needs DCGM process accounting (deferred).
+        """
+        want = [self._by_index[i] for i in self._requested]
+        phys_pid = (_physical_utilization_by_pid()
+                    if any(s.kind == "physical" for s in want) else {})
+        out: Dict[int, List[Tuple[int, int]]] = {}
+        for s in want:
+            out[s.slot_index] = (phys_pid.get(s.physical_index, [])
+                                 if s.kind == "physical" else [])
+        return out
+
+
+@contextmanager
+def gpu_utilization_watch(slot_indices=None):
+    """
+    Yield a :class:`UtilSampler` for repeated, low-overhead sampling.
+    """
+    slots = get_gpu_slots(with_usage=False)
+    by_index = {s.slot_index: s for s in slots}
+    requested = ([s.slot_index for s in slots] if slot_indices is None
+                 else [i for i in slot_indices if i in by_index])
+    uuid_to_key = {m["uuid"]: (phys, m["gi"])
+                   for phys, migs in _mig_instances_by_physical().items() for m in migs}
+    need_mig = any(by_index[i].kind == "mig" for i in requested)
+    session = None
+    if need_mig:
+        session = _DcgmMigSession()
+        if not session.open():
+            session = None
+    try:
+        yield UtilSampler(slots, requested, uuid_to_key, session)
+    finally:
+        if session is not None:
+            session.close()
 
 
 #############################
@@ -20,7 +690,7 @@ def device_count(n_gpus=0):
     :return:
         Adjusted n_gpus and all available devices
     """
-    available_device_count = get_gpu_info_c()[0]
+    available_device_count = _get_gpu_info_c_physical()[0]
 
     if n_gpus < 0:
         if available_device_count >= 0:
@@ -79,31 +749,62 @@ def get_gpu_info(return_usage=False, trials=2, timeout=30, print_trials=False):
     return (total_gpus, total_mem, gpu_type)
 
 
-def cuda_vis_check(total_gpus):
-    """Helper function to count GPUs by environment variable
+def _cuda_vis_check_physical(total_gpus):
+    """Physical-device visibility filter used by get_gpu_info_c (integer CVD tokens).
+
+    MIG-<uuid> tokens are ignored here (they are not physical device indices); if
+    CUDA_VISIBLE_DEVICES is all-MIG, every physical device stays visible so NVML can
+    still enumerate the parent(s) for MIG expansion.
     """
     cudavis = os.getenv("CUDA_VISIBLE_DEVICES")
-    which_gpus = []
-    if cudavis is not None:
-        # prune away white-space, non-numerics,
-        # except commas for simple checking
-        cudavis = "".join(cudavis.split())
-        import re
-        cudavis = re.sub("[^0-9,]", "", cudavis)
+    if cudavis is None:
+        return total_gpus, list(range(total_gpus))
+    tokens = [t for t in "".join(cudavis.split()).split(",") if t]
+    if not tokens:                       # CUDA_VISIBLE_DEVICES="" -> nothing visible
+        return 0, []
+    int_tokens = [int(t) for t in tokens if t.lstrip("+-").isdigit()]
+    if not int_tokens:                   # all MIG-<uuid> tokens -> keep parents visible
+        return total_gpus, list(range(total_gpus))
+    return min(total_gpus, len(int_tokens)), int_tokens
 
-        lencudavis = len(cudavis)
-        if lencudavis == 0:
-            total_gpus = 0
-        else:
-            total_gpus = min(
-                total_gpus,
-                os.getenv("CUDA_VISIBLE_DEVICES").count(",") + 1)
-            which_gpus = os.getenv("CUDA_VISIBLE_DEVICES").split(",")
-            which_gpus = [int(x) for x in which_gpus]
-    else:
-        which_gpus = list(range(0, total_gpus))
 
-    return total_gpus, which_gpus
+# ---------------------------------------------------------------------------
+# slot count + cuda tokens + MIG-aware visibility (over the slot table)
+# ---------------------------------------------------------------------------
+
+def num_gpu_slots():
+    """Total GPU slots (physical GPUs + MIG instances) — DAI's ngpus_vis."""
+    return len(get_gpu_slots(with_usage=False))
+
+
+def cuda_token(slot_index):
+    """CUDA_VISIBLE_DEVICES token for one slot: "<i>" (physical) or "MIG-<uuid>" (mig)."""
+    return get_gpu_slots(with_usage=False)[slot_index].cuda_token
+
+
+def cuda_tokens(slot_indices):
+    """Comma-joined CUDA_VISIBLE_DEVICES string for the given slot indices."""
+    slots = get_gpu_slots(with_usage=False)
+    return ",".join(slots[i].cuda_token for i in slot_indices)
+
+
+def cuda_vis_check(total_slots=None):
+    """MIG-aware slot visibility per CUDA_VISIBLE_DEVICES.
+
+    Returns ``(count, [slot_index, ...])`` for the slots CVD exposes, honoring both
+    integer tokens (physical slots) and ``MIG-<uuid>`` tokens, matched against each
+    slot's ``cuda_token``.  When CVD is unset, all slots are visible.  ``total_slots``
+    is accepted for signature compatibility; the slot table is the source of truth.
+    """
+    slots = get_gpu_slots(with_usage=False)
+    token_to_index = {s.cuda_token: s.slot_index for s in slots}
+    cudavis = os.getenv("CUDA_VISIBLE_DEVICES")
+    if cudavis is None:
+        idxs = [s.slot_index for s in slots]
+        return len(idxs), idxs
+    tokens = [t for t in "".join(cudavis.split()).split(",") if t]
+    idxs = [token_to_index[t] for t in tokens if t in token_to_index]
+    return len(idxs), idxs
 
 
 def get_gpu_info_subprocess(return_usage=False):
@@ -123,7 +824,7 @@ def get_gpu_info_subprocess(return_usage=False):
         total_gpus_actual = py3nvml.py3nvml.nvmlDeviceGetCount()
 
         # the below restricts but doesn't select
-        total_gpus, which_gpus = cuda_vis_check(total_gpus_actual)
+        total_gpus, which_gpus = _cuda_vis_check_physical(total_gpus_actual)
 
         total_mem = \
             min([py3nvml.py3nvml.nvmlDeviceGetMemoryInfo(
@@ -149,7 +850,7 @@ def get_gpu_info_subprocess(return_usage=False):
     return (total_gpus, total_mem, gpu_type)
 
 
-def get_gpu_info_c(return_memory=False,
+def _get_gpu_info_c_physical(return_memory=False,
                    return_name=False,
                    return_usage=False,
                    return_free_memory=False,
@@ -215,7 +916,7 @@ def get_gpu_info_c(return_memory=False,
             return None
 
         # This will drop the GPU count, but the returned usage
-        total_gpus, which_gpus = cuda_vis_check(total_gpus_actual)
+        total_gpus, which_gpus = _cuda_vis_check_physical(total_gpus_actual)
 
         # Strip the trailing NULL and whitespaces from C backend
         gpu_types_tmp = [g_type.strip().replace("\x00", "")
@@ -304,6 +1005,70 @@ def get_gpu_info_c(return_memory=False,
     return tuple(to_return)
 
 
+def get_gpu_info_c(return_memory=False, return_name=False, return_usage=False,
+                   return_free_memory=False, return_capability=False,
+                   return_memory_by_pid=False, return_usage_by_pid=False,
+                   return_all=False, verbose=0):
+    """Slot-based GPU info: the SAME positional tuple as the physical accessor,
+    but counting GPU **slots** (physical GPUs + MIG instances).
+
+    On non-MIG hosts this delegates to the physical accessor and is byte-for-byte
+    identical to the historical behaviour. When MIG is enabled, every array is per-slot
+    (length == num_gpu_slots()); MIG slots carry no per-process data (num_pids == 0).
+
+    Positional tuple (flags select which appear):
+        [0] count; return_memory->total_mems; return_name->names; return_usage->usages;
+        return_free_memory->free_mems; return_capability->majors, minors;
+        return_memory_by_pid->num_pids, pids, usedGpuMemorys;
+        return_usage_by_pid->num_pids_usage, pids_usage, usedGpuUsage.
+    """
+    if not _mig_instances_by_physical():
+        return _get_gpu_info_c_physical(
+            return_memory=return_memory, return_name=return_name, return_usage=return_usage,
+            return_free_memory=return_free_memory, return_capability=return_capability,
+            return_memory_by_pid=return_memory_by_pid, return_usage_by_pid=return_usage_by_pid,
+            return_all=return_all, verbose=verbose)
+
+    want_usage = return_usage or return_all
+    want_procs = return_memory_by_pid or return_usage_by_pid or return_all
+    slots = get_gpu_slots(with_usage=want_usage, with_procs=want_procs)
+    n = len(slots)
+    max_pids = 2000
+
+    def _pid_arrays(field):   # field: "used_mem" or "usage"
+        num = np.zeros(n, dtype=np.uint32)
+        pid = np.zeros((n, max_pids), dtype=np.uint32)
+        val = np.zeros((n, max_pids), dtype=np.uint64)
+        for i, s in enumerate(slots):
+            if not s.procs:
+                continue
+            capped = s.procs[:max_pids]
+            for k, p in enumerate(capped):
+                pid[i, k] = p.pid
+                val[i, k] = getattr(p, field)
+            num[i] = len(capped)
+        return num, pid, val
+
+    to_return = [n]
+    if return_all or return_memory:
+        to_return.append(np.array([s.mem_total for s in slots], dtype=np.uint64))
+    if return_all or return_name:
+        to_return.append(np.array([s.name for s in slots]))
+    if return_all or return_usage:
+        to_return.append(np.array([s.utilization for s in slots], dtype=np.int32))
+    if return_all or return_free_memory:
+        to_return.append(np.array([s.mem_free for s in slots], dtype=np.uint64))
+    if return_all or return_capability:
+        to_return.append(np.array([s.compute_capability[0] for s in slots], dtype=np.int32))
+        to_return.append(np.array([s.compute_capability[1] for s in slots], dtype=np.int32))
+    if return_all or return_memory_by_pid:
+        to_return.extend(_pid_arrays("used_mem"))
+    if return_all or return_usage_by_pid:
+        to_return.extend(_pid_arrays("usage"))
+
+    return tuple(to_return)
+
+
 def cudaresetdevice(gpu_id, n_gpus):
     """
     Resets the cuda device so any next cuda call will reset the cuda context.
@@ -341,7 +1106,7 @@ def get_compute_capability(gpu_id):
     """
     try:
         total_gpus, majors, minors =\
-            get_gpu_info_c(return_capability=True)
+            _get_gpu_info_c_physical(return_capability=True)
     # pylint: disable=bare-except
     except:
         total_gpus = 0
@@ -371,8 +1136,6 @@ def get_compute_capability_orig(gpu_id):
     import concurrent.futures
     from concurrent.futures import ProcessPoolExecutor
     res = None
-    # sometimes hit broken process pool in cpu mode,
-    # so return dummy values in that case
     try:
         with ProcessPoolExecutor(max_workers=1) as executor:
             future = executor.submit(get_compute_capability_subprocess, gpu_id)

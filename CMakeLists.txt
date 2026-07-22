@@ -66,6 +66,7 @@ INCLUDE_DIRECTORIES(
         src/cpu/include
         # Here and not in target_include_directories b/c cmake < 3.7 which we use in Dockerfiles does not support it
         src/gpu/include
+	third_party/dcgm
         ${Python_INCLUDE_DIRS}
         ${PYTHON_INCLUDE_PATH_CUST}
 )
@@ -219,7 +220,8 @@ if(USE_CUDA)
                 ${STATIC_LIBS}
                 ${BLAS_LIBRARIES}
                 ${NVTX_LIBRARY}
-                ${NVML_LIBRARY})
+                ${NVML_LIBRARY}
+	        ${CMAKE_DL_LIBS})
         #============= BUILD GPU LIBRARY
 
         #============= GPU SWIG
