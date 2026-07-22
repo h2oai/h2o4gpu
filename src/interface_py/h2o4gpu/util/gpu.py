@@ -62,6 +62,7 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
         [11] pids_usage       shape (count, max_pids)
         [12] usedGpuUsage     shape (count, max_pids)
     """
+    want_procs = with_procs   # preserved for the MIG fallback (the physical retry may clear with_procs)
     raw = _get_gpu_info_c_physical(
         return_memory=True,
         return_name=True,
@@ -86,12 +87,24 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
             return_all=False,
         )
 
-    if raw is None:
-        return []
+    if raw is None or raw[0] == 0:
+        # Physical enumeration is unavailable (e.g. a MIG-only container, where the parent
+        # GPU's aggregate nvmlDeviceGetMemoryInfo returns NOT_SUPPORTED and the C call bails).
+        # The per-MIG-device NVML path still works, so build slots straight from the MIG
+        # instances instead of dropping them.
+        mig_by_phys = _mig_instances_by_physical(with_procs=want_procs)
+        if not mig_by_phys:
+            return []
+        placeholders = [
+            GpuSlot(slot_index=i, cuda_token=str(pidx), kind="physical", groupable=True,
+                    name="", compute_capability=(0, 0), mem_total=0, mem_used=0,
+                    mem_free=0, utilization=0, physical_index=pidx, procs=None)
+            for i, pidx in enumerate(sorted(mig_by_phys.keys()))
+        ]
+        return _expand_mig_slots(placeholders, with_usage=with_usage,
+                                 with_procs=want_procs, mig_by_phys=mig_by_phys)
 
     count = raw[0]
-    if count == 0:
-        return []
 
     # Unpack positional tuple elements (indices depend on which flags were set).
     # Flags always set: memory, name, usage (conditional), free_memory, capability.
@@ -187,12 +200,14 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
 
 def _expand_mig_slots(physical_slots: List[GpuSlot],
                       with_usage: bool = True,
-                      with_procs: bool = False) -> List[GpuSlot]:
+                      with_procs: bool = False,
+                      mig_by_phys: Optional[Dict[int, List[dict]]] = None) -> List[GpuSlot]:
     """
     Splice MIG instances into the slot table with per-MIG util (and per-MIG processes
-    when with_procs=True).
+    when with_procs=True).  ``mig_by_phys`` may be passed in to avoid re-enumerating.
     """
-    mig_by_phys = _mig_instances_by_physical(with_procs=with_procs)
+    if mig_by_phys is None:
+        mig_by_phys = _mig_instances_by_physical(with_procs=with_procs)
     if not mig_by_phys:
         return physical_slots
 
