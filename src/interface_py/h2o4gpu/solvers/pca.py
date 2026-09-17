@@ -290,7 +290,7 @@ class PCA(TruncatedSVD):
         else:
             self.backend = 'h2o4gpu'
 
-        from h2o4gpu.decomposition.pca import PCASklearn
+        from h2o4gpu.decomposition._pca import PCASklearn
         self.model_sklearn = PCASklearn(
             n_components=n_components,
             copy=copy,

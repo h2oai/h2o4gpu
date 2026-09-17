@@ -157,10 +157,23 @@ src/interface_py/h2o4gpu/svm/
 src/interface_py/h2o4gpu/tests/
 src/interface_py/h2o4gpu/tree/
 src/interface_py/h2o4gpu/utils/
+# additional modules introduced by the scikit-learn 1.5.2 overlay
+src/interface_py/h2o4gpu/_loss/
+src/interface_py/h2o4gpu/experimental/
+src/interface_py/h2o4gpu/impute/
+src/interface_py/h2o4gpu/inspection/
+src/interface_py/h2o4gpu/_distributor_init.py
+src/interface_py/h2o4gpu/_isotonic.c
+src/interface_py/h2o4gpu/_isotonic.pyx
+src/interface_py/h2o4gpu/_min_dependencies.py
+src/interface_py/h2o4gpu/conftest.py
+src/interface_py/h2o4gpu/meson.build
 
 ## add submodules so user has to force to add/commit
 cub
+cub-xgboost
 ./xgboost
+src/interface_py/xgboost_prev
 py3nvml
 scikit-learn
 tests/googletest

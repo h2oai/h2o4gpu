@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cfloat>
 #include "cuda_runtime.h"
 #include "utils.cuh"
 #include "../device/device_context.cuh"

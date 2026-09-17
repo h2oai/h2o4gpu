@@ -175,7 +175,7 @@ xgb_params = {'max_depth':8, #'max_depth':2,
               'gamma':0.1, 
               'reg_lamda':1, 
               'subsample':1,
-              'tree_method':'gpu_hist' # exact can't handle airlines, so just use hist for now
+              'tree_method':'hist', 'device':'cuda' # exact can't handle airlines, so just use hist for now
              }
 
 
@@ -209,7 +209,7 @@ xgb_hist_params = {'max_depth':8,
                   'gamma':0.1, 
                   'reg_lamda':1, 
                   'subsample':1,
-                  'tree_method':'gpu_hist'
+                  'tree_method':'hist', 'device':'cuda'
                  }
 
 

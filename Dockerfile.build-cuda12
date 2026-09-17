@@ -1,0 +1,45 @@
+# Builder image for compiling h2o4gpu against the CUDA 12.8 toolkit
+# (Blackwell-capable: sm_100/sm_120) on Rocky Linux 8 (glibc 2.28), Python 3.11.
+#
+# The system + Python build dependencies are baked into image layers so they are
+# installed once and reused; `make docker-build-cuda12` then only compiles.
+# Docker layer caching invalidates the pip layer only when
+# src/interface_py/requirements_buildonly.txt changes.
+ARG CUDA_IMAGE=nvidia/cuda:12.8.0-devel-rockylinux8
+FROM ${CUDA_IMAGE}
+
+# System build deps. openblas-devel lives in PowerTools (CRB); pbzip2 in EPEL.
+RUN dnf install -y dnf-plugins-core \
+    && dnf config-manager --set-enabled powertools \
+    && dnf install -y epel-release \
+    && dnf install -y \
+        gcc-toolset-13 \
+        cmake \
+        swig \
+        make \
+        which \
+        git \
+        pbzip2 \
+        openblas-devel \
+        python3.11 python3.11-devel python3.11-pip \
+    && dnf clean all
+
+# Toolchain + CUDA on PATH (equivalent to `scl enable gcc-toolset-13`).
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=/opt/rh/gcc-toolset-13/root/usr/bin:${CUDA_HOME}/bin:${PATH}
+ENV LD_LIBRARY_PATH=/opt/rh/gcc-toolset-13/root/usr/lib64:${CUDA_HOME}/lib64:${CUDA_HOME}/extras/CUPTI/lib64
+
+# Python venv with the build-only deps baked in (cython 3.0.11, wheel 0.45.1,
+# numpy 1.24.4, scikit-learn 1.5.2, ...). Cached unless requirements change.
+RUN python3.11 -m venv /opt/h2o4gpu-venv \
+    && /opt/h2o4gpu-venv/bin/pip install --no-cache-dir -U "pip" "setuptools<81"
+COPY src/interface_py/requirements_buildonly.txt /tmp/requirements_buildonly.txt
+RUN /opt/h2o4gpu-venv/bin/pip install --no-cache-dir -r /tmp/requirements_buildonly.txt \
+    && chmod -R a+rwX /opt/h2o4gpu-venv   # writable so non-root `make install` can pip into the venv
+
+# Put the venv first on PATH so `python`/`python3.11` resolve to it (CMake's
+# FIND_PACKAGE(Python) and the bare `python` numpy probe pick it up).
+ENV VIRTUAL_ENV=/opt/h2o4gpu-venv
+ENV PATH=/opt/h2o4gpu-venv/bin:${PATH}
+
+WORKDIR /h2o4gpu

@@ -7,6 +7,46 @@
 
 namespace cml {
 
+namespace {
+
+// CUDA 12 removed the legacy cusparse<t>csrmv routines. This helper reproduces
+// y = alpha * A * x + beta * y for a CSR matrix using the generic cusparseSpMV
+// API. Callers always use CUSPARSE_OPERATION_NON_TRANSPOSE (transpose is baked
+// into the stored pointers), so x has length n (cols) and y has length m (rows).
+template <typename T>
+cusparseStatus_t SpMvCsr(cusparseHandle_t handle, int m, int n, int nnz,
+                         const T *alpha, const T *csr_val,
+                         const int *csr_row_ptr, const int *csr_col_ind,
+                         const T *x, const T *beta, T *y,
+                         cudaDataType val_type) {
+  cusparseSpMatDescr_t mat_a;
+  cusparseDnVecDescr_t vec_x, vec_y;
+  cusparseStatus_t err = cusparseCreateCsr(
+      &mat_a, m, n, nnz, const_cast<int *>(csr_row_ptr),
+      const_cast<int *>(csr_col_ind), const_cast<T *>(csr_val),
+      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO,
+      val_type);
+  if (err != CUSPARSE_STATUS_SUCCESS) return err;
+  cusparseCreateDnVec(&vec_x, n, const_cast<T *>(x), val_type);
+  cusparseCreateDnVec(&vec_y, m, y, val_type);
+  size_t buffer_size = 0;
+  err = cusparseSpMV_bufferSize(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, alpha,
+                                mat_a, vec_x, beta, vec_y, val_type,
+                                CUSPARSE_SPMV_ALG_DEFAULT, &buffer_size);
+  void *buffer = nullptr;
+  if (buffer_size > 0) CudaCheckError(cudaMalloc(&buffer, buffer_size));
+  err = cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, alpha, mat_a,
+                     vec_x, beta, vec_y, val_type, CUSPARSE_SPMV_ALG_DEFAULT,
+                     buffer);
+  if (buffer) cudaFree(buffer);
+  cusparseDestroySpMat(mat_a);
+  cusparseDestroyDnVec(vec_x);
+  cusparseDestroyDnVec(vec_y);
+  return err;
+}
+
+}  // namespace
+
 template <typename I>
 cusparseStatus_t spblas_gemv(cusparseHandle_t handle,
                              cusparseOperation_t transA,
@@ -14,15 +54,14 @@ cusparseStatus_t spblas_gemv(cusparseHandle_t handle,
                              const spmat<double, I, CblasRowMajor> *A,
                              const vector<double> *x, double beta,
                              vector<double> *y) {
-  cusparseOperation_t trans = CUSPARSE_OPERATION_NON_TRANSPOSE;
   cusparseStatus_t err;
   if (transA == CUSPARSE_OPERATION_NON_TRANSPOSE)
-    err = cusparseDcsrmv(handle, trans, A->m, A->n, A->nnz, &alpha, descrA,
-        A->val, A->ptr, A->ind, x->data, &beta, y->data);
+    err = SpMvCsr<double>(handle, A->m, A->n, A->nnz, &alpha, A->val, A->ptr,
+                          A->ind, x->data, &beta, y->data, CUDA_R_64F);
   else
-    err = cusparseDcsrmv(handle, trans, A->n, A->m, A->nnz, &alpha, descrA,
-        A->val + A->nnz, A->ptr + ptr_len(*A), A->ind + A->nnz, x->data, &beta,
-        y->data);
+    err = SpMvCsr<double>(handle, A->n, A->m, A->nnz, &alpha, A->val + A->nnz,
+                          A->ptr + ptr_len(*A), A->ind + A->nnz, x->data, &beta,
+                          y->data, CUDA_R_64F);
   CusparseCheckError(err);
   return err;
 }
@@ -34,15 +73,14 @@ cusparseStatus_t spblas_gemv(cusparseHandle_t handle,
                              const spmat<double, I, CblasColMajor> *A,
                              const vector<double> *x, double beta,
                              vector<double> *y) {
-  cusparseOperation_t trans = CUSPARSE_OPERATION_NON_TRANSPOSE;
   cusparseStatus_t err;
   if (transA == CUSPARSE_OPERATION_NON_TRANSPOSE)
-    err = cusparseDcsrmv(handle, trans, A->m, A->n, A->nnz, &alpha,
-        descrA, A->val + A->nnz, A->ptr + ptr_len(*A), A->ind + A->nnz, x->data,
-        &beta, y->data);
+    err = SpMvCsr<double>(handle, A->m, A->n, A->nnz, &alpha, A->val + A->nnz,
+                          A->ptr + ptr_len(*A), A->ind + A->nnz, x->data, &beta,
+                          y->data, CUDA_R_64F);
   else
-    err = cusparseDcsrmv(handle, trans, A->n, A->m, A->nnz, &alpha,
-        descrA, A->val, A->ptr, A->ind, x->data, &beta, y->data);
+    err = SpMvCsr<double>(handle, A->n, A->m, A->nnz, &alpha, A->val, A->ptr,
+                          A->ind, x->data, &beta, y->data, CUDA_R_64F);
   CusparseCheckError(err);
   return err;
 }
@@ -54,15 +92,14 @@ cusparseStatus_t spblas_gemv(cusparseHandle_t handle,
                              const spmat<float, I, CblasRowMajor> *A,
                              const vector<float> *x, float beta,
                              vector<float> *y) {
-  cusparseOperation_t trans = CUSPARSE_OPERATION_NON_TRANSPOSE;
   cusparseStatus_t err;
   if (transA == CUSPARSE_OPERATION_NON_TRANSPOSE)
-    err = cusparseScsrmv(handle, trans, A->m, A->n, A->nnz, &alpha, descrA,
-        A->val, A->ptr, A->ind, x->data, &beta, y->data);
+    err = SpMvCsr<float>(handle, A->m, A->n, A->nnz, &alpha, A->val, A->ptr,
+                         A->ind, x->data, &beta, y->data, CUDA_R_32F);
   else
-    err = cusparseScsrmv(handle, trans, A->n, A->m, A->nnz, &alpha, descrA,
-        A->val + A->nnz, A->ptr + ptr_len(*A), A->ind + A->nnz, x->data, &beta,
-        y->data);
+    err = SpMvCsr<float>(handle, A->n, A->m, A->nnz, &alpha, A->val + A->nnz,
+                         A->ptr + ptr_len(*A), A->ind + A->nnz, x->data, &beta,
+                         y->data, CUDA_R_32F);
   CusparseCheckError(err);
   return err;
 }
@@ -74,15 +111,14 @@ cusparseStatus_t spblas_gemv(cusparseHandle_t handle,
                              const spmat<float, I, CblasColMajor> *A,
                              const vector<float> *x, float beta,
                              vector<float> *y) {
-  cusparseOperation_t trans = CUSPARSE_OPERATION_NON_TRANSPOSE;
   cusparseStatus_t err;
   if (transA == CUSPARSE_OPERATION_NON_TRANSPOSE)
-    err = cusparseScsrmv(handle, trans, A->m, A->n, A->nnz, &alpha,
-        descrA, A->val + A->nnz, A->ptr + ptr_len(*A), A->ind + A->nnz, x->data,
-        &beta, y->data);
+    err = SpMvCsr<float>(handle, A->m, A->n, A->nnz, &alpha, A->val + A->nnz,
+                         A->ptr + ptr_len(*A), A->ind + A->nnz, x->data, &beta,
+                         y->data, CUDA_R_32F);
   else
-    err = cusparseScsrmv(handle, trans, A->n, A->m, A->nnz, &alpha,
-        descrA, A->val, A->ptr, A->ind, x->data, &beta, y->data);
+    err = SpMvCsr<float>(handle, A->n, A->m, A->nnz, &alpha, A->val, A->ptr,
+                         A->ind, x->data, &beta, y->data, CUDA_R_32F);
   CusparseCheckError(err);
   return err;
 }

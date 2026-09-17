@@ -7,11 +7,12 @@
 #include <thrust/device_allocator.h>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/fill.h>
 #include <cfloat>
 #include <iostream>
 #include <sstream>
-#include "../include/cub/cub.cuh"
+#include <cub/cub.cuh>
 #include "kmeans_general.h"
 
 inline void gpu_assert(cudaError_t code, const char *file, int line,

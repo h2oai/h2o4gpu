@@ -129,7 +129,7 @@ params = {'max_depth':2, #'max_depth':5,
           'gamma':0.1, 
           'reg_lamda':1, 
           'subsample':1,
-          'tree_method':'gpu_exact'
+          'tree_method':'exact', 'device':'cpu'
           }
 
 
@@ -173,7 +173,7 @@ params = {'max_depth':2,
           'gamma':0.1, 
           'reg_lamda':1, 
           'subsample':1,
-          'tree_method':'gpu_hist'
+          'tree_method':'hist', 'device':'cuda'
          }
 
 

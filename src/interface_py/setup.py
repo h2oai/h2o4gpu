@@ -21,7 +21,6 @@ class H2O4GPUBuild(build):
         NVCC = os.popen("which nvcc").read() != ""
         CPULIB = '_ch2o4gpu_cpu'
         GPULIB = '_ch2o4gpu_gpu'
-        EXT = ".dylib" if os.uname()[0] == "Darwin" else ".so"
 
         # run original build code
         build.run(self)
@@ -32,10 +31,6 @@ class H2O4GPUBuild(build):
         targets = [CPULIB, GPULIB] if NVCC else [CPULIB]
         cmd.extend(targets)
 
-        CPU_LIBPATH = os.path.join(H2O4GPUPATH, CPULIB + EXT)
-        GPU_LIBPATH = os.path.join(H2O4GPUPATH, GPULIB + EXT)
-
-        target_files = [CPU_LIBPATH, GPU_LIBPATH] if NVCC else [CPU_LIBPATH]
         message = 'Compiling H2O4GPU CPU and GPU' if NVCC \
             else 'Compiling H2O4GPU CPU only'
 
@@ -45,10 +40,26 @@ class H2O4GPUBuild(build):
 
         self.execute(compile_cpu, [], message)
 
-        # copy resulting tool to library build folder
-        self.mkpath(self.build_lib)
-        for target in target_files:
-            self.copy_file(target, self.build_lib)
+        # NB: the compiled _ch2o4gpu_*.so are NOT copied into build_lib here.
+        # `make cpp` copies the freshly-built .so into h2o4gpu/libs/, from where
+        # package_data ships exactly one copy at the package-qualified path the
+        # SWIG loader imports (h2o4gpu.libs._ch2o4gpu_gpu). Copying it into
+        # build_lib as well produced a second ~1 GB top-of-purelib duplicate.
+        #
+        # Fail loudly if that .so is missing: package_data would otherwise glob
+        # nothing and build a valid-looking wheel with no extension, so the
+        # breakage would only surface as an ImportError in production. The .so
+        # is a `make cpp` artifact, so a missing one means `make cpp` did not run
+        # (or failed) before `make py`.
+        libs_dir = os.path.join(BASEPATH, 'h2o4gpu', 'libs')
+        required = [GPULIB, CPULIB] if NVCC else [CPULIB]
+        missing = [lib + '.so' for lib in required
+                   if not os.path.exists(os.path.join(libs_dir, lib + '.so'))]
+        if missing:
+            raise SystemExit(
+                "FATAL: compiled extension(s) missing from %s: %s. "
+                "Run `make cpp` before building the wheel." % (
+                    libs_dir, ', '.join(missing)))
 
 
 class H2O4GPUInstall(install):
@@ -93,6 +104,14 @@ packages = get_packages('./')
 package_data = {}
 for package in packages:
     package_data[package] = ['*']
+
+# Drop build-time-only Cython/C sources (~80 MB from the scikit-learn overlay,
+# e.g. _loss/_loss.c). None are imported at runtime in a binary wheel; the
+# compiled .cpython-311-*.so is what loads. Data files (.csv.gz, .rst, .npz,
+# .arff, .json) and the .so are kept.
+exclude_package_data = {
+    package: ['*.c', '*.cpp', '*.pyx', '*.pxd', '*.pxi'] for package in packages
+}
 
 
 class BinaryDistribution(Distribution):
@@ -140,6 +159,7 @@ setup(
     # find -L -type d -printf '%d\t%P\n'| sort -r -nk1| cut -f2-|grep -v pycache
     packages=packages,
     package_data=package_data,
+    exclude_package_data=exclude_package_data,
     license='Apache v2.0',
     zip_safe=False,
     description='H2O.ai GPU Edition',
