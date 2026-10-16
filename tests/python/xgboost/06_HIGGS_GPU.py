@@ -24,15 +24,15 @@ from sklearn.model_selection import train_test_split
 import json
 import seaborn
 import matplotlib.pyplot as plt
-import pkg_resources
+import importlib.metadata
 from libs.loaders import load_higgs
 from libs.timer import Timer
 from libs.metrics import classification_metrics_binary, classification_metrics_binary_prob, binarize_prediction
 import warnings
 
 print("System version: {}".format(sys.version))
-print("XGBoost version: {}".format(pkg_resources.get_distribution('xgboost').version))
-print("LightGBM version: {}".format(pkg_resources.get_distribution('lightgbm').version))
+print("XGBoost version: {}".format(importlib.metadata.version('xgboost')))
+print("LightGBM version: {}".format(importlib.metadata.version('lightgbm')))
 
 warnings.filterwarnings("ignore")
 #get_ipython().magic('matplotlib inline')

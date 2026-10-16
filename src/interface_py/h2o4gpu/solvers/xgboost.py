@@ -7,12 +7,8 @@
 
 from warnings import warn
 
-import pkg_resources
-try:
-    pkg_resources.get_distribution('dask_cuda')
-    CUDA_DASK_INSTALLED = True
-except pkg_resources.DistributionNotFound:
-    CUDA_DASK_INSTALLED = False
+# DAI dropped dask, so the distributed (dask_cuda) XGBoost path is never taken.
+CUDA_DASK_INSTALLED = False
 
 
 def _xgb_device_params(tree_method, predictor, device, n_gpus):

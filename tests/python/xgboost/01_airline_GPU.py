@@ -24,13 +24,13 @@ from libs.loaders import load_airline
 from libs.conversion import convert_cols_categorical_to_numeric, convert_related_cols_categorical_to_numeric
 from libs.timer import Timer
 from libs.utils import get_number_processors
-import pkg_resources
+import importlib.metadata
 import json
 import warnings
 
 print("System version: {}".format(sys.version))
-print("XGBoost version: {}".format(pkg_resources.get_distribution('xgboost').version))
-print("LightGBM version: {}".format(pkg_resources.get_distribution('lightgbm').version))
+print("XGBoost version: {}".format(importlib.metadata.version('xgboost')))
+print("LightGBM version: {}".format(importlib.metadata.version('lightgbm')))
 
 warnings.filterwarnings("ignore")
 

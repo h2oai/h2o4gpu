@@ -30,13 +30,13 @@ from libs.timer import Timer
 from libs.conversion import convert_cols_categorical_to_numeric
 from libs.metrics import classification_metrics_multilabel
 import pickle
-import pkg_resources
+import importlib.metadata
 import json
 
 
 print("System version: {}".format(sys.version))
-print("XGBoost version: {}".format(pkg_resources.get_distribution('xgboost').version))
-print("LightGBM version: {}".format(pkg_resources.get_distribution('lightgbm').version))
+print("XGBoost version: {}".format(importlib.metadata.version('xgboost')))
+print("LightGBM version: {}".format(importlib.metadata.version('lightgbm')))
 
 #get_ipython().magic('matplotlib inline')
 get_ipython().magic('load_ext autoreload')

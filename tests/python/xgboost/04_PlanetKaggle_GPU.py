@@ -15,7 +15,7 @@
 import sys, os
 from collections import defaultdict
 import numpy as np
-import pkg_resources
+import importlib.metadata
 from libs.loaders import load_planet_kaggle
 from libs.planet_kaggle import threshold_prediction
 from libs.timer import Timer
@@ -28,8 +28,8 @@ import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session, get_session
 
 print("System version: {}".format(sys.version))
-print("XGBoost version: {}".format(pkg_resources.get_distribution('xgboost').version))
-print("LightGBM version: {}".format(pkg_resources.get_distribution('lightgbm').version))
+print("XGBoost version: {}".format(importlib.metadata.version('xgboost')))
+print("LightGBM version: {}".format(importlib.metadata.version('lightgbm')))
 
 
 # In[2]:
