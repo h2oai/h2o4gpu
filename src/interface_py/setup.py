@@ -6,8 +6,8 @@ from setuptools import setup
 """
 import os
 from subprocess import call
-from distutils.command.build import build
-from setuptools.command.install import install
+from setuptools.command.build import build
+from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 H2O4GPUPATH = os.path.join(BASEPATH, '../interface_c/')
@@ -60,23 +60,6 @@ class H2O4GPUBuild(build):
                 "FATAL: compiled extension(s) missing from %s: %s. "
                 "Run `make cpp` before building the wheel." % (
                     libs_dir, ', '.join(missing)))
-
-
-class H2O4GPUInstall(install):
-    def initialize_options(self):
-        install.initialize_options(self)
-        self.build_scripts = None
-
-    def finalize_options(self):
-        install.finalize_options(self)
-        self.set_undefined_options('build', ('build_scripts', 'build_scripts'))
-
-    def run(self):
-        # run original install code
-        install.run(self)
-
-        # install H2O4GPU executables
-        self.copy_tree(self.build_lib, self.install_lib)
 
 
 # reqs is a list of requirement
@@ -137,15 +120,11 @@ with open('build_info.txt', 'w') as fp:
     fp.write('\n'.join(lines)+'\n')
 
 # Make the .whl contain required python and OS as we are version and distro specific
-try:
-    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+class bdist_wheel(_bdist_wheel):
+    def finalize_options(self):
+        _bdist_wheel.finalize_options(self)
+        self.root_is_pure = False
 
-    class bdist_wheel(_bdist_wheel):
-        def finalize_options(self):
-            _bdist_wheel.finalize_options(self)
-            self.root_is_pure = False
-except ImportError:
-    bdist_wheel = None
 
 setup(
     name='h2o4gpu',
@@ -166,6 +145,5 @@ setup(
     long_description='**H2O4GPU** is a collection of GPU solvers by [H2Oai](https://www.h2o.ai/) with APIs in Python and R. The Python API builds upon the easy-to-use [scikit-learn](http://scikit-learn.org) API and its well-tested CPU-based algorithms.  It can be used as a drop-in replacement for scikit-learn (i.e. `import h2o4gpu as sklearn`) with support for GPUs on selected (and ever-growing) algorithms.  H2O4GPU inherits all the existing scikit-learn algorithms and falls back to CPU algorithms when the GPU algorithm does not support an important existing scikit-learn class option.  The R package is a wrapper around the H2O4GPU Python package, and the interface follows standard R conventions for modeling.',
     long_description_content_type='text/markdown',
     install_requires=reqs,
-    cmdclass={'bdist_wheel': bdist_wheel,
-              'build': H2O4GPUBuild, 'install': H2O4GPUInstall},
+    cmdclass={'bdist_wheel': bdist_wheel, 'build': H2O4GPUBuild},
 )

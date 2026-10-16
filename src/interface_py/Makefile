@@ -24,8 +24,7 @@ pyformat:
 	done; \
 
 prep:
-	PYVER=`$(PYTHON) -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' | sed 's/\.//g'` && sed -i 's/python-tag=.*/python-tag=py'$$PYVER'/g' setup.cfg
-	PYVER=`$(PYTHON) -c 'import sys; print(".".join(map(str, sys.version_info[:2])))'` && sed -i 's/python_version==.*/python_version=='$$PYVER'/g' setup.cfg
+	PYVER=`$(PYTHON) -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' | sed 's/\.//g'` && sed -i 's/python_tag=.*/python_tag=py'$$PYVER'/g' setup.cfg
 	cd ../../ && bash scripts/apply_sklearn_initmerge.sh # so if change our init it gets updated
 
 all: prep

@@ -5,14 +5,10 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
+import importlib.util
 from warnings import warn
 
-import pkg_resources
-try:
-    pkg_resources.get_distribution('dask_cuda')
-    CUDA_DASK_INSTALLED = True
-except pkg_resources.DistributionNotFound:
-    CUDA_DASK_INSTALLED = False
+CUDA_DASK_INSTALLED = importlib.util.find_spec('dask_cuda') is not None
 
 
 def _xgb_device_params(tree_method, predictor, device, n_gpus):

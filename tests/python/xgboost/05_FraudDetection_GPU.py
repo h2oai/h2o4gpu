@@ -16,7 +16,7 @@ import json
 import sys
 
 import matplotlib.pyplot as plt
-import pkg_resources
+import importlib.metadata
 from libs.loaders import load_fraud
 from libs.timer import Timer
 from libs.metrics import classification_metrics_binary, classification_metrics_binary_prob, binarize_prediction
@@ -27,8 +27,8 @@ from sklearn.model_selection import train_test_split
 
 
 print("System version: {}".format(sys.version))
-print("XGBoost version: {}".format(pkg_resources.get_distribution('xgboost').version))
-print("LightGBM version: {}".format(pkg_resources.get_distribution('lightgbm').version))
+print("XGBoost version: {}".format(importlib.metadata.version('xgboost')))
+print("LightGBM version: {}".format(importlib.metadata.version('lightgbm')))
 
 
 # In[2]:

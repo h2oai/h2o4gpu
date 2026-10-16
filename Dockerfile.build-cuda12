@@ -31,8 +31,10 @@ ENV LD_LIBRARY_PATH=/opt/rh/gcc-toolset-13/root/usr/lib64:${CUDA_HOME}/lib64:${C
 
 # Python venv with the build-only deps baked in (cython 3.0.11, wheel 0.45.1,
 # numpy 1.24.4, scikit-learn 1.5.2, ...). Cached unless requirements change.
+# setuptools tracks the line DAI builds with (83.x: no pkg_resources, no
+# `setup.py install`), so the wheel is built with what DAI installs it into.
 RUN python3.11 -m venv /opt/h2o4gpu-venv \
-    && /opt/h2o4gpu-venv/bin/pip install --no-cache-dir -U "pip" "setuptools<81"
+    && /opt/h2o4gpu-venv/bin/pip install --no-cache-dir -U "pip" "setuptools~=83.0"
 COPY src/interface_py/requirements_buildonly.txt /tmp/requirements_buildonly.txt
 RUN /opt/h2o4gpu-venv/bin/pip install --no-cache-dir -r /tmp/requirements_buildonly.txt \
     && chmod -R a+rwX /opt/h2o4gpu-venv   # writable so non-root `make install` can pip into the venv
