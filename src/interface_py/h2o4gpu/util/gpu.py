@@ -64,7 +64,7 @@ def get_gpu_info(return_usage=False, trials=2, timeout=30, print_trials=False):
             with ProcessPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(get_gpu_info_subprocess, return_usage)
                 # don't wait more than 30s,
-                # import on py3nvml can hang if 2 subprocesses
+                # import on pynvml can hang if 2 subprocesses
                 # GIL lock import at same time
                 res = future.result(timeout=timeout)
             return res
@@ -118,27 +118,29 @@ def get_gpu_info_subprocess(return_usage=False):
     gpu_type = 0
     usage = []
     try:
-        import py3nvml.py3nvml
-        py3nvml.py3nvml.nvmlInit()
-        total_gpus_actual = py3nvml.py3nvml.nvmlDeviceGetCount()
+        import pynvml
+        pynvml.nvmlInit()
+        total_gpus_actual = pynvml.nvmlDeviceGetCount()
 
         # the below restricts but doesn't select
         total_gpus, which_gpus = cuda_vis_check(total_gpus_actual)
 
         total_mem = \
-            min([py3nvml.py3nvml.nvmlDeviceGetMemoryInfo(
-                py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total
+            min([pynvml.nvmlDeviceGetMemoryInfo(
+                pynvml.nvmlDeviceGetHandleByIndex(i)).total
                  for i in range(total_gpus)])
 
-        gpu_type = py3nvml.py3nvml.nvmlDeviceGetName(
-            py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(0))
+        gpu_type = pynvml.nvmlDeviceGetName(
+            pynvml.nvmlDeviceGetHandleByIndex(0))
+        # older pynvml returns bytes here
+        if isinstance(gpu_type, bytes):
+            gpu_type = gpu_type.decode()
 
         if return_usage:
             for j in range(total_gpus_actual):
                 if j in which_gpus:
-                    handle = py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(j)
-                    util = py3nvml.py3nvml.nvmlDeviceGetUtilizationRates(
-                        handle)
+                    handle = pynvml.nvmlDeviceGetHandleByIndex(j)
+                    util = pynvml.nvmlDeviceGetUtilizationRates(handle)
                     usage.append(util.gpu)
     # pylint: disable=bare-except
     except:
