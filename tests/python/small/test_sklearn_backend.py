@@ -93,3 +93,13 @@ def test_auto_backend_routes_removed_param_to_sklearn():
     assert model.backend == 'sklearn'
     model.fit(X, Y_REG)
     assert np.asarray(model.predict(X)).shape[0] == X.shape[0]
+
+
+@pytest.mark.parametrize("cls", [GradientBoostingClassifier,
+                                 GradientBoostingRegressor])
+def test_gradient_boosting_xgboost_backend_default_missing(cls):
+    # The wrapper default missing=None used to reach xgboost unchanged, which
+    # xgboost >= 2.0 rejects ("Invalid type for: missing ... got: Null").
+    model = cls(n_estimators=5, n_gpus=0, backend='h2o4gpu')
+    model.fit(X, _target(cls))
+    assert np.asarray(model.predict(X)).shape[0] == X.shape[0]

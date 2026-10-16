@@ -5,6 +5,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
+import numpy as np
 from warnings import warn
 
 # DAI dropped dask, so the distributed (dask_cuda) XGBoost path is never taken.
@@ -1118,6 +1119,11 @@ class GradientBoostingClassifier:
 
         self.distributed = False
 
+        # xgboost >= 2.0 rejects missing=None; the documented meaning of None
+        # is np.nan.
+        if missing is None:
+            missing = np.nan
+
         import xgboost as xgb
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
@@ -1665,6 +1671,11 @@ class GradientBoostingRegressor:
 
         if random_state is None:
             random_state = 0
+
+        # xgboost >= 2.0 rejects missing=None; the documented meaning of None
+        # is np.nan.
+        if missing is None:
+            missing = np.nan
 
         import xgboost as xgb
         from ..util.gpu import device_count
