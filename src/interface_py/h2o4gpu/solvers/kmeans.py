@@ -736,18 +736,22 @@ class KMeans:
             self.backend = 'h2o4gpu'
 
         from h2o4gpu.cluster import _kmeans as k_means_
+        from h2o4gpu.solvers.utils import _warn_removed_sklearn_param
+        # scikit-learn 1.0 removed 'precompute_distances' and 'n_jobs';
+        # 1.3 removed algorithm='auto' (it meant 'lloyd').
+        _warn_removed_sklearn_param('precompute_distances',
+                                    precompute_distances, 'auto', '1.0')
+        _warn_removed_sklearn_param('n_jobs', n_jobs, 1, '1.0')
         self.model_sklearn = k_means_.KMeansSklearn(
             n_clusters=n_clusters,
             init=init,
             n_init=n_init,
             max_iter=max_iter,
             tol=tol,
-            precompute_distances=precompute_distances,
             verbose=verbose,
             random_state=random_state,
             copy_x=copy_x,
-            n_jobs=n_jobs,
-            algorithm=algorithm)
+            algorithm='lloyd' if algorithm == 'auto' else algorithm)
         self.model_h2o4gpu = KMeansH2O(
             n_clusters=n_clusters,
             init=init,

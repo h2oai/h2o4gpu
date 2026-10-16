@@ -187,10 +187,12 @@ class Ridge:
                 self.do_sklearn = True
                 self.backend = 'h2o4gpu'
 
+        from h2o4gpu.solvers.utils import _warn_removed_sklearn_param
+        # scikit-learn 1.2 removed 'normalize'; accepted but not forwarded.
+        _warn_removed_sklearn_param('normalize', normalize, False, '1.2')
         self.model_sklearn = sk.RidgeSklearn(
             alpha=alpha,
             fit_intercept=fit_intercept,
-            normalize=normalize,
             copy_X=copy_X,
             max_iter=max_iter,
             tol=tol,
