@@ -28,7 +28,6 @@ src/interface_py/docs/source
 source
 src/pylint.d/*
 # Ignore artifacts made from make, h2o4gpu
-src/interface_py/py3nvml
 src/interface_py/xgboost
 deps/
 ./data/
@@ -69,7 +68,6 @@ examples/py/alpha
 examples/py/preds
 src/interface_c/ch2o4gpu_cpu
 src/interface_c/ch2o4gpu_gpu
-src/py3nvml/
 tmp/
 tests/results
 examples/py/sourced.png
@@ -170,11 +168,8 @@ src/interface_py/h2o4gpu/conftest.py
 src/interface_py/h2o4gpu/meson.build
 
 ## add submodules so user has to force to add/commit
-cub
-cub-xgboost
 ./xgboost
 src/interface_py/xgboost_prev
-py3nvml
 scikit-learn
 tests/googletest
 

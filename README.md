@@ -71,8 +71,8 @@ Download the Python wheel file (For Python 3.6):
  Start a fresh pyenv or virtualenv session.
 
 Install the Python wheel file. NOTE: If you don't use a fresh environment, this will
-overwrite your py3nvml and xgboost installations to use our validated
-versions.
+overwrite your xgboost installation to use our validated
+version.
 
 ```
 pip install h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl

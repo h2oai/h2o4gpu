@@ -21,7 +21,8 @@ $(warning ARCH is $(ARCH))
 # Location of local directory with dependencies
 DEPS_DIR = deps
 
-# NCCL support in XGBoost.
+# NCCL support in XGBoost (multi-GPU). Uses the system NCCL (libnccl-devel);
+# point NCCL_ROOT at a non-standard install.
 USENCCL=1
 
 # xgboost cxx

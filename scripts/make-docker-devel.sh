@@ -19,13 +19,8 @@ $DOCKER_CLI run --runtime=nvidia --init --rm --name ${CONTAINER_NAME} -d -t -u r
 echo "Docker devel - Copying files"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
 
-# workaround to not compile nccl every time
 echo "init submodules ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo && make ${makeopts} submodule_update H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX}"
-
-echo "Docker devel - Copying nccl build artifacts"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /nccl rev-parse HEAD) != $(git -C /root/repo rev-parse :nccl) ]; then echo "NCCL version mismatch in nccl submodule and docker file" && exit 1;  fi;'
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cp -r /nccl/build /root/repo/nccl'
 
 echo "make buildinstall with ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "export XGB_CXX=g++ && export XGB_CC=gcc && export XGB_PROLOGUE='scl enable devtoolset-7' && cd repo && make ${makeopts} buildinstall H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX} && make py_docs"

@@ -142,7 +142,7 @@ git checkout h2oai
 make -f Makefile2
 pip install python-package/dist/xgboost*.whl --upgrade
 ```
-Note: By default the GPU NCCL version is installed using your local cuda version.
+Note: By default XGBoost is built with NCCL support against the system NCCL (`libnccl-devel`).
 
 If fully understand build, can do jump to latter steps of
 "fullinstall", but when in doubt always do "fullinstall."
@@ -191,7 +191,7 @@ To expedite the building process in dev setup you can set `DEV_BUILD=ON` e.g. `m
 
 ##### NCCL
 
-Currently only XGBoost part of the project is using NCCL. By default NCCL support is ON during builds. To turn it off run with `USENCCL=0` e.g. `make fullinstall USENCCL=0`
+Currently only XGBoost part of the project is using NCCL. By default NCCL support is ON during builds and the system NCCL (`libnccl-devel`, or `NCCL_ROOT` for a non-standard install) is used. To turn it off run with `USENCCL=0` e.g. `make fullinstall USENCCL=0`
 
 ## Testing
 
