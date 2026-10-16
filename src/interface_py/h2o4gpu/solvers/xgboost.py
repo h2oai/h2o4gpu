@@ -295,17 +295,23 @@ class RandomForestClassifier:
         self.backend = backend
 
         from h2o4gpu.ensemble import RandomForestClassifierSklearn
+        from h2o4gpu.solvers.utils import _sklearn_renamed
+        from h2o4gpu.solvers.utils import _warn_removed_sklearn_param
+        # scikit-learn 1.0 removed 'min_impurity_split', 1.3 removed
+        # max_features='auto' ('sqrt' for classifiers), and criterion
+        # 'mse'/'mae' were renamed.
+        _warn_removed_sklearn_param('min_impurity_split', min_impurity_split,
+                                    None, '1.0')
         self.model_sklearn = RandomForestClassifierSklearn(
             n_estimators=n_estimators,
-            criterion=criterion,
+            criterion=_sklearn_renamed(criterion),
             max_depth=max_depth,
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
             min_weight_fraction_leaf=min_weight_fraction_leaf,
-            max_features=max_features,
+            max_features='sqrt' if max_features == 'auto' else max_features,
             max_leaf_nodes=max_leaf_nodes,
             min_impurity_decrease=min_impurity_decrease,
-            min_impurity_split=min_impurity_split,
             bootstrap=bootstrap,
             oob_score=oob_score,
             n_jobs=n_jobs,
@@ -648,17 +654,23 @@ class RandomForestRegressor:
         self.distributed = False
 
         from h2o4gpu.ensemble import RandomForestRegressorSklearn
+        from h2o4gpu.solvers.utils import _sklearn_renamed
+        from h2o4gpu.solvers.utils import _warn_removed_sklearn_param
+        # scikit-learn 1.0 removed 'min_impurity_split', 1.3 removed
+        # max_features='auto' (all features, 1.0, for regressors), and
+        # criterion 'mse'/'mae' were renamed.
+        _warn_removed_sklearn_param('min_impurity_split', min_impurity_split,
+                                    None, '1.0')
         self.model_sklearn = RandomForestRegressorSklearn(
             n_estimators=n_estimators,
-            criterion=criterion,
+            criterion=_sklearn_renamed(criterion),
             max_depth=max_depth,
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
             min_weight_fraction_leaf=min_weight_fraction_leaf,
-            max_features=max_features,
+            max_features=1.0 if max_features == 'auto' else max_features,
             max_leaf_nodes=max_leaf_nodes,
             min_impurity_decrease=min_impurity_decrease,
-            min_impurity_split=min_impurity_split,
             bootstrap=bootstrap,
             oob_score=oob_score,
             n_jobs=n_jobs,
@@ -1075,25 +1087,31 @@ class GradientBoostingClassifier:
         self.backend = backend
 
         from h2o4gpu.ensemble import GradientBoostingClassifierSklearn
+        from h2o4gpu.solvers.utils import _sklearn_renamed
+        from h2o4gpu.solvers.utils import _warn_removed_sklearn_param
+        # scikit-learn 1.0 removed 'min_impurity_split' and 'presort', 1.3
+        # removed max_features='auto' ('sqrt' for classifiers), and
+        # loss='deviance' is now 'log_loss'.
+        _warn_removed_sklearn_param('min_impurity_split', min_impurity_split,
+                                    None, '1.0')
+        _warn_removed_sklearn_param('presort', presort, 'auto', '1.0')
         self.model_sklearn = GradientBoostingClassifierSklearn(
-            loss=loss,
+            loss=_sklearn_renamed(loss),
             learning_rate=learning_rate,  # h2o4gpu
             n_estimators=n_estimators,  # h2o4gpu
             subsample=subsample,  # h2o4gpu
-            criterion=criterion,
+            criterion=_sklearn_renamed(criterion),
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
             min_weight_fraction_leaf=min_weight_fraction_leaf,
             max_depth=max_depth,  # h2o4gpu
             min_impurity_decrease=min_impurity_decrease,
-            min_impurity_split=min_impurity_split,
             init=init,
             random_state=random_state,  # h2o4gpu
-            max_features=max_features,
+            max_features='sqrt' if max_features == 'auto' else max_features,
             verbose=verbose,  # h2o4gpu
             max_leaf_nodes=max_leaf_nodes,
-            warm_start=warm_start,
-            presort=presort)  # h2o4gpu)
+            warm_start=warm_start)
 
         if random_state is None:
             random_state = 0
@@ -1618,26 +1636,32 @@ class GradientBoostingRegressor:
         self.backend = backend
 
         from h2o4gpu.ensemble import GradientBoostingRegressorSklearn
+        from h2o4gpu.solvers.utils import _sklearn_renamed
+        from h2o4gpu.solvers.utils import _warn_removed_sklearn_param
+        # scikit-learn 1.0 removed 'min_impurity_split' and 'presort', 1.3
+        # removed max_features='auto' (all features, None, for regressors),
+        # and loss 'ls'/'lad' are now 'squared_error'/'absolute_error'.
+        _warn_removed_sklearn_param('min_impurity_split', min_impurity_split,
+                                    None, '1.0')
+        _warn_removed_sklearn_param('presort', presort, 'auto', '1.0')
         self.model_sklearn = GradientBoostingRegressorSklearn(
-            loss=loss,
+            loss=_sklearn_renamed(loss),
             learning_rate=learning_rate,  # h2o4gpu
             n_estimators=n_estimators,  # h2o4gpu
             subsample=subsample,  # h2o4gpu
-            criterion=criterion,
+            criterion=_sklearn_renamed(criterion),
             min_samples_split=min_samples_split,
             min_samples_leaf=min_samples_leaf,
             min_weight_fraction_leaf=min_weight_fraction_leaf,
             max_depth=max_depth,  # h2o4gpu
             min_impurity_decrease=min_impurity_decrease,
-            min_impurity_split=min_impurity_split,
             init=init,
             random_state=random_state,  # h2o4gpu
-            max_features=max_features,
+            max_features=None if max_features == 'auto' else max_features,
             alpha=alpha,
             verbose=verbose,  # h2o4gpu
             max_leaf_nodes=max_leaf_nodes,
-            warm_start=warm_start,
-            presort=presort)  # h2o4gpu)
+            warm_start=warm_start)
 
         if random_state is None:
             random_state = 0
