@@ -5,10 +5,10 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
-import importlib.util
 from warnings import warn
 
-CUDA_DASK_INSTALLED = importlib.util.find_spec('dask_cuda') is not None
+# DAI dropped dask, so the distributed (dask_cuda) XGBoost path is never taken.
+CUDA_DASK_INSTALLED = False
 
 
 def _xgb_device_params(tree_method, predictor, device, n_gpus):
