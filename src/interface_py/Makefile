@@ -33,7 +33,7 @@ all: prep
 	# lightgbm_*/lib_lightgbm.so symlink from a prior run) don't get packaged.
 	rm -rf build
 
-	# for incorporating xgboost and py3nvml and lightgbm builds
+	# for incorporating xgboost and lightgbm builds
 	rm -rf ./xgboost
 	rm -rf ./xgboost_prev
 	ln -sf ../../xgboost/python-package/xgboost ./xgboost
@@ -44,7 +44,6 @@ all: prep
 	rm -f lightgbm_gpu lightgbm_cpu
 	if [ -e ../../LightGBM/python-package/dist_gpu/lightgbm ]; then ln -sf ../../LightGBM/python-package/dist_gpu/lightgbm lightgbm_gpu; else echo "LightGBM (gpu) not built - omitting from wheel"; fi
 	if [ -e ../../LightGBM/python-package/dist_cpu/lightgbm ]; then ln -sf ../../LightGBM/python-package/dist_cpu/lightgbm lightgbm_cpu; else echo "LightGBM (cpu) not built - omitting from wheel"; fi
-	ln -sf ../../py3nvml/py3nvml .
 
 	$(PYTHON) setup.py sdist bdist_wheel
 
@@ -64,7 +63,6 @@ all: prep
 install:
 	-cd ../.. && $(PYTHON) -m pip uninstall -y h2o4gpu
 	-cd ../.. && $(PYTHON) -m pip uninstall -y xgboost
-	-cd ../.. && $(PYTHON) -m pip uninstall -y py3nvml
 	-cd ../.. && $(PYTHON) -m pip uninstall -y lightgbm
 	find -name *.pyc | xargs rm -rf
 	find -name *__pycache__ | xargs rm -rf

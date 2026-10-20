@@ -924,13 +924,12 @@ def RunAnimation(arg):
 
     deviceCount = arg
     # Need this only for animation of GPU usage to be consistent with
-    #from py3nvml.py3nvml import *
-    import py3nvml
+    import pynvml
     maxNGPUS = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
     print("\nNumber of GPUS:", maxNGPUS)
 
-    py3nvml.py3nvml.nvmlInit()
-    total_deviceCount = py3nvml.py3nvml.nvmlDeviceGetCount()
+    pynvml.nvmlInit()
+    total_deviceCount = pynvml.nvmlDeviceGetCount()
     if deviceCount == -1:
         deviceCount = total_deviceCount
     #for i in range(deviceCount):
@@ -973,10 +972,9 @@ def RunAnimation(arg):
         #gpu
         gpu_snapshot = []
         gpu_labels = list(range(1, deviceCount + 1))
-        import py3nvml
         for j in range(deviceCount):
-            handle = py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(j)
-            util = py3nvml.py3nvml.nvmlDeviceGetUtilizationRates(handle)
+            handle = pynvml.nvmlDeviceGetHandleByIndex(j)
+            util = pynvml.nvmlDeviceGetUtilizationRates(handle)
             gpu_snapshot.append(util.gpu)
         gpu_snapshot = gpu_snapshot
         plot_gpu_perf(ax2, gpu_labels, gpu_snapshot)

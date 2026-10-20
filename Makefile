@@ -89,12 +89,6 @@ all_deps_install:
 update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
-nccl: nccl/build/lib/libnccl_static.a
-
-nccl/build/lib/libnccl_static.a:
-	@echo "----- Building NCCL -----"
-	cd nccl && $(MAKE) -j src.build CUDA_HOME=$(CUDA_HOME)
-
 cpp:
 	mkdir -p build && \
 	cd build && \
@@ -124,9 +118,9 @@ xgboost:
 	# `set(flags ...)` sed no longer applies (2.x has no such line).
 	cd xgboost; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
-fullinstall-xgboost: nccl xgboost install_xgboost
+fullinstall-xgboost: xgboost install_xgboost
 
-fullinstall-xgboost-prev: nccl xgboost_prev install_xgboost_prev
+fullinstall-xgboost-prev: xgboost_prev install_xgboost_prev
 
 .PHONY: lightgbm_gpu
 lightgbm_gpu:
@@ -256,9 +250,7 @@ install: install_py
 # CLEANING TARGETS
 #########################################
 
-clean: clean_py3nvml clean_xgboost clean_xgboost_prev clean_lightgbm clean_deps clean_py  clean_cpp
-	@echo "nccl is not cleaned as it takes too long to compile"
-	@echo "use 'make clean_nccl' to do it mannualy"
+clean: clean_xgboost clean_xgboost_prev clean_lightgbm clean_deps clean_py  clean_cpp
 	-rm -rf ./build
 	-rm -rf ./results/ ./tmp/
 
@@ -288,9 +280,6 @@ clean_lightgbm:
 	-$(PYTHON) -m pip uninstall -y lightgbm
 	rm -rf LightGBM/build/
 
-clean_py3nvml:
-	-$(PYTHON) -m pip uninstall -y py3nvml
-
 clean_deps:
 	@echo "----- Cleaning dependencies -----"
 	rm -rf "$(DEPS_DIR)"
@@ -299,9 +288,6 @@ clean_deps:
 	sed 's/==.*//g' requirements.txt|grep -v "#" > requirements_plain.txt
 	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) $(PYTHON) -m pip uninstall -y
 	rm -rf requirements_plain.txt requirements.txt
-
-clean_nccl:
-	rm -rf nccl/build
 
 #########################################
 # FULL BUILD AND INSTALL TARGETS

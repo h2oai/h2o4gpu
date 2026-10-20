@@ -25,7 +25,7 @@ h2o4gpu becomes a sklearn drop-in by **overlaying scikit-learn's source into its
 
 ### Bundled submodules
 
-The wheel bundles H2O.ai forks (`.gitmodules`): `xgboost`/`xgboost_prev`, `LightGBM`, `py3nvml`, `nccl`, `cub`. Installing the wheel **overwrites** the env's `xgboost`/`py3nvml`/`lightgbm`, so keep these fork versions aligned with whatever shares the environment (e.g. DAI). Clone with `--recursive`. LightGBM is optional: it's only bundled if built (`make lightgbm_gpu` / `lightgbm_cpu`, which need boost-from-source) and is otherwise omitted from the wheel.
+The wheel bundles H2O.ai forks (`.gitmodules`): `xgboost`/`xgboost_prev`, `LightGBM`. Installing the wheel **overwrites** the env's `xgboost`/`lightgbm`, so keep these fork versions aligned with whatever shares the environment (e.g. DAI). Clone with `--recursive`. LightGBM is optional: it's only bundled if built (`make lightgbm_gpu` / `lightgbm_cpu`, which need boost-from-source) and is otherwise omitted from the wheel.
 
 ## Building
 
