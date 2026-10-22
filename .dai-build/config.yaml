@@ -1,0 +1,9 @@
+# Build configuration for the DAI dependency build workflow, validated before
+# anything is built.
+schema: 1
+python: "3.11"
+cuda_image: cuda:12.8.1-cudnn-devel-rockylinux8
+# The ladder set in CMakeLists.txt; _ch2o4gpu_gpu.so is verified against it
+# with cuobjdump.
+cuda_archs: "60;61;70;75;80;90;100;120"
+arches: [x86_64, aarch64]
