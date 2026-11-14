@@ -1543,11 +1543,13 @@ class ElasticNet:
         else:
             self.backend = 'h2o4gpu'
 
+        from h2o4gpu.solvers.utils import _warn_removed_sklearn_param
+        # scikit-learn 1.2 removed 'normalize'; accepted but not forwarded.
+        _warn_removed_sklearn_param('normalize', normalize, False, '1.2')
         self.model_sklearn = sk.ElasticNetSklearn(
             alpha=alpha,
             l1_ratio=l1_ratio,
             fit_intercept=fit_intercept,
-            normalize=normalize,
             precompute=precompute,
             max_iter=max_iter,
             copy_X=copy_X,

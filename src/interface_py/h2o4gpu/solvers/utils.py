@@ -5,6 +5,7 @@
 """
 import sys
 import time
+import warnings
 import numpy as np
 
 # Data utils
@@ -30,6 +31,37 @@ class WrappedPointer:
             self.lib.modelfree1_double(self.p)
         else:
             self.lib.modelfree1_float(self.p)
+
+
+# scikit-learn renamed these loss/criterion values (1.0-1.2) and removed the
+# old names. The wrappers keep the old names as their defaults for API
+# stability and translate when building the sklearn backend.
+_SKLEARN_RENAMED_VALUES = {
+    'deviance': 'log_loss',
+    'ls': 'squared_error',
+    'lad': 'absolute_error',
+    'mse': 'squared_error',
+    'mae': 'absolute_error',
+}
+
+
+def _sklearn_renamed(value):
+    """Map a legacy scikit-learn loss/criterion name to its current name."""
+    return _SKLEARN_RENAMED_VALUES.get(value, value)
+
+
+def _warn_removed_sklearn_param(name, value, default, removed_in):
+    """Warn that a constructor parameter scikit-learn removed is ignored.
+
+    The wrappers keep accepting parameters scikit-learn has since removed so
+    their signatures stay stable, but no longer forward them to the sklearn
+    backend (which raises TypeError on unknown kwargs). Only warn when the
+    caller actually changed the value from the wrapper default.
+    """
+    if value != default:
+        warnings.warn(
+            f"'{name}' was removed in scikit-learn {removed_in} and is "
+            "ignored by the sklearn backend", FutureWarning, stacklevel=3)
 
 
 def _get_order(data, fortran, order):
@@ -441,7 +473,6 @@ def free_preds(self):
 
 
 def finish(self):
-    import warnings
     warnings.warn("finish will be removed in a next version, please use 'del'",
                   DeprecationWarning, stacklevel=2)
     free_sols(self)

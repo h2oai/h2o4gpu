@@ -199,6 +199,12 @@ class LogisticRegression:
         else:
             self.backend = 'h2o4gpu'
 
+        # scikit-learn 1.5 deprecates passing 'multi_class' (removed in 1.7);
+        # its default already behaves as 'ovr' for liblinear and binary
+        # targets, so only forward a value the caller changed.
+        sklearn_kwargs = {}
+        if multi_class != 'ovr':
+            sklearn_kwargs['multi_class'] = multi_class
         self.model_sklearn = sk.LogisticRegressionSklearn(
             penalty=penalty,
             dual=dual,
@@ -210,10 +216,10 @@ class LogisticRegression:
             random_state=random_state,
             solver=solver,
             max_iter=max_iter,
-            multi_class=multi_class,
             verbose=verbose,
             warm_start=warm_start,
-            n_jobs=n_jobs)
+            n_jobs=n_jobs,
+            **sklearn_kwargs)
 
         # Equivalent Logistic parameters for h2o4gpu
         n_threads = None
