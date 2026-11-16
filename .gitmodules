@@ -10,3 +10,10 @@
 [submodule "xgboost_prev"]
 	path = xgboost_prev
 	url = https://github.com/h2oai/xgboost.git
+[submodule "LightGBM_rocm"]
+	path = LightGBM_rocm
+	url = https://github.com/lightgbm-org/LightGBM
+[submodule "xgboost_rocm"]
+	path = xgboost_rocm
+	url = https://github.com/AMD-Ecosystem/xgboost
+	branch = release_2.1.3-rocm

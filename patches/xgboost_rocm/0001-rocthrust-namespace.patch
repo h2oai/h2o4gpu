@@ -1,0 +1,28 @@
+Fix the build of xgboost's ROCm 2.1.3 branch with current rocThrust.
+
+src/common/cuda_to_hip.h reopened namespace thrust to alias thrust::cuda to
+thrust::hip. Current rocThrust declares its systems inside a versioned inline
+namespace (THRUST_NAMESPACE_BEGIN), so that empty thrust::hip made every use of
+thrust::hip ambiguous. Alias the real one instead.
+
+diff --git a/src/common/cuda_to_hip.h b/src/common/cuda_to_hip.h
+index 903e02ea3..438b2b4c7 100644
+--- a/src/common/cuda_to_hip.h
++++ b/src/common/cuda_to_hip.h
+@@ -65,12 +65,11 @@
+ #define cudaDevAttrMultiProcessorCount                      hipDeviceAttributeMultiprocessorCount
+ #define cudaOccupancyMaxActiveBlocksPerMultiprocessor       hipOccupancyMaxActiveBlocksPerMultiprocessor
+ 
+-namespace thrust {
+-    namespace hip {
+-    }
++#include <thrust/system/hip/detail/execution_policy.h>
+ 
+-    namespace cuda = thrust::hip;
+-}
++THRUST_NAMESPACE_BEGIN
++namespace cuda = thrust::hip;
++THRUST_NAMESPACE_END
+ 
+ namespace thrust {
+ #define cuda_category hip_category

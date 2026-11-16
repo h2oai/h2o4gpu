@@ -307,7 +307,7 @@ public:
 };
 
 // Templated typedefs
-#ifndef __CUDACC__
+#if !defined(__CUDACC__) && !defined(__HIPCC__)
 template <typename T, typename M>
 using H2O4GPUDirect = H2O4GPU<T, M, ProjectorDirect<T, M> >;
 

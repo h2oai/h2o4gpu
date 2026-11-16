@@ -1,0 +1,38 @@
+// cuSOLVER names used by h2o4gpu, mapped to hipSOLVER.
+#pragma once
+
+// cuSOLVER's headers also declare the cuBLAS types.
+#include "cublas_v2.h"
+#include <hipsolver/hipsolver.h>
+
+#define cusolverStatus_t hipsolverStatus_t
+#define cusolverDnHandle_t hipsolverDnHandle_t
+
+#define CUSOLVER_STATUS_SUCCESS HIPSOLVER_STATUS_SUCCESS
+#define CUSOLVER_STATUS_NOT_INITIALIZED HIPSOLVER_STATUS_NOT_INITIALIZED
+#define CUSOLVER_STATUS_ALLOC_FAILED HIPSOLVER_STATUS_ALLOC_FAILED
+#define CUSOLVER_STATUS_INVALID_VALUE HIPSOLVER_STATUS_INVALID_VALUE
+#define CUSOLVER_STATUS_ARCH_MISMATCH HIPSOLVER_STATUS_ARCH_MISMATCH
+#define CUSOLVER_STATUS_EXECUTION_FAILED HIPSOLVER_STATUS_EXECUTION_FAILED
+#define CUSOLVER_STATUS_INTERNAL_ERROR HIPSOLVER_STATUS_INTERNAL_ERROR
+#define CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED \
+  HIPSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED
+
+#define CUSOLVER_EIG_MODE_VECTOR HIPSOLVER_EIG_MODE_VECTOR
+
+#define cusolverDnCreate hipsolverDnCreate
+#define cusolverDnDestroy hipsolverDnDestroy
+#define cusolverDnSgeqrf hipsolverDnSgeqrf
+#define cusolverDnDgeqrf hipsolverDnDgeqrf
+#define cusolverDnSgeqrf_bufferSize hipsolverDnSgeqrf_bufferSize
+#define cusolverDnDgeqrf_bufferSize hipsolverDnDgeqrf_bufferSize
+#define cusolverDnSgesvd hipsolverDnSgesvd
+#define cusolverDnDgesvd hipsolverDnDgesvd
+#define cusolverDnSgesvd_bufferSize hipsolverDnSgesvd_bufferSize
+#define cusolverDnDgesvd_bufferSize hipsolverDnDgesvd_bufferSize
+#define cusolverDnSormqr hipsolverDnSormqr
+#define cusolverDnDormqr hipsolverDnDormqr
+#define cusolverDnSsyevd hipsolverDnSsyevd
+#define cusolverDnDsyevd hipsolverDnDsyevd
+#define cusolverDnSsyevd_bufferSize hipsolverDnSsyevd_bufferSize
+#define cusolverDnDsyevd_bufferSize hipsolverDnDsyevd_bufferSize

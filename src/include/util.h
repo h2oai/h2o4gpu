@@ -142,7 +142,7 @@
     } \
   } while (0)
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
 #ifdef CUDCHECKERR
 
 #define wrapcudaDeviceSynchronize() cudaDeviceSynchronize()
@@ -259,7 +259,7 @@
 #define DEBUG_ASSERT_LEQ(a, b)                   do { } while (0)
 #define DEBUG_ASSERT_LT(a, b)                    do { } while (0)
 #define DEBUG_ASSERT_NEQ(a, b)                   do { } while (0)
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
 #define DEBUG_CUDA_CHECK_ERR()                   do { } while (0)
 #endif
 #define DEBUG_EXPECT(statement)                  do { } while (0)
@@ -365,7 +365,7 @@
     } \
   } while (0)
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
 #define DEBUG_CUDA_CHECK_ERR() \
   do { \
     cudaError_t err = cudaGetLastError(); \

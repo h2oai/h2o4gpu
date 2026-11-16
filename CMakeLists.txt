@@ -19,6 +19,7 @@ INCLUDE(${SWIG_USE_FILE})
 
 #============= OPTIONS & SETTINGS
 OPTION(USE_CUDA  "Build with GPU acceleration" ON)
+OPTION(USE_HIP  "Build with GPU acceleration on AMD GPUs (ROCm)" OFF)
 OPTION(DEV_BUILD  "Dev build" OFF)
 OPTION(DEV_SYNC  "call cudaDeviceSynchronize after each cuda call" OFF)
 
@@ -36,6 +37,29 @@ EXECUTE_PROCESS(COMMAND python -c "import numpy; print(numpy.get_include())"
 
 if(OpenMP_CXX_FOUND OR OPENMP_FOUND)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+if(WIN32)
+        # vcpkg installs OpenBLAS's cblas.h under include/openblas.
+        FIND_PATH(CBLAS_INCLUDE_DIR cblas.h PATH_SUFFIXES openblas)
+        # The CPU solver headers still use std::unary_function, which the
+        # MSVC standard library hides in C++17 mode unless asked for it.
+        ADD_DEFINITIONS(-D_HAS_AUTO_PTR_ETC=1)
+        ADD_DEFINITIONS(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -Dpopen=_popen -Dpclose=_pclose)
+        if(OpenMP_CXX_FOUND)
+                # clang links the LLVM OpenMP runtime; use the matching
+                # omp.h, not MSVC's OpenMP 2.0 one.
+                ADD_DEFINITIONS(-D_OPENMP_LLVM_RUNTIME)
+                # The OpenMP link flag does not reach the linker on Windows.
+                LINK_LIBRARIES(${OpenMP_CXX_LIBRARIES})
+        endif()
+        # Empty <unistd.h>: the sources include it but use nothing from it.
+        INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/hip_compat/win32)
+        # Python.h auto-links pythonXY.lib into the SWIG modules.
+        LINK_DIRECTORIES(${Python_LIBRARY_DIRS})
+        # CMake 4 (needed for clang-cl as the HIP compiler) refuses the
+        # bundled googletest's cmake_minimum_required.
+        SET(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 endif()
 
 # OpenBLAS ships cblas.h under an openblas/ subdir on RHEL/Rocky 8 rather than
@@ -101,6 +125,10 @@ SWIG_LINK_LIBRARIES(ch2o4gpu_cpu cpuh2o4gpu ${PYTHON_LIBRARIES})
 SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_cpu_REAL_NAME} PROPERTIES
         LINK_FLAGS ${OpenMP_CXX_FLAGS})
 #============= CPU SWIG
+
+if(USE_CUDA AND USE_HIP)
+        MESSAGE(FATAL_ERROR "USE_CUDA and USE_HIP are mutually exclusive; pass -DUSE_CUDA=OFF with -DUSE_HIP=ON.")
+endif()
 
 if(USE_CUDA)
         FIND_PACKAGE(CUDA 8.0 REQUIRED)
@@ -266,4 +294,136 @@ if(USE_CUDA)
         ${BLAS_LIBRARIES}
         ${NVTX_LIBRARY}
         ${NVML_LIBRARY})
+endif()
+
+if(USE_HIP)
+        enable_language(HIP)
+        FIND_PACKAGE(hip REQUIRED)
+        FIND_PACKAGE(hipblas REQUIRED)
+        FIND_PACKAGE(hipsparse REQUIRED)
+        FIND_PACKAGE(hipsolver REQUIRED)
+        FIND_PACKAGE(hiprand REQUIRED)
+        FIND_PACKAGE(hipcub REQUIRED)
+        FIND_PACKAGE(rocthrust REQUIRED)
+
+        #============= BUILD GPU LIBRARY
+        ADD_DEFINITIONS(
+                -DCUDA_MAJOR=${hip_VERSION_MAJOR}
+                -DHAVECUDA
+        )
+
+        # Headers named after the CUDA ones, mapping them to HIP and the ROCm
+        # libraries, so the sources keep their CUDA spelling.
+        SET(HIP_COMPAT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/hip_compat)
+        INCLUDE_DIRECTORIES(BEFORE ${HIP_COMPAT_DIR})
+
+        if(DEV_BUILD)
+            SET(CMAKE_BUILD_TYPE Debug)
+        endif()
+
+        if(DEV_SYNC)
+            MESSAGE(STATUS "Building with device sync.")
+            add_compile_definitions(SYNC)
+        endif()
+
+        SET(HIP_LIBS hip::host roc::hipblas roc::hipsparse roc::hipsolver hip::hiprand)
+
+        FILE(GLOB_RECURSE GPU_SOURCES
+                src/*.cu
+                src/*.cuh
+                src/common/*.cpp
+                src/common/*.h
+                )
+        # Not built on CUDA 12 either; see the CUDA branch above.
+        list(FILTER GPU_SOURCES EXCLUDE REGEX ".*/factorization/.*\\.cu$")
+        # The bandwidth tests have no caller and are not ported to HIP.
+        list(FILTER GPU_SOURCES EXCLUDE REGEX ".*/(p2p)?bwcheck\\.cu$")
+        SET(GPU_CU_SOURCES ${GPU_SOURCES})
+        list(FILTER GPU_CU_SOURCES INCLUDE REGEX ".*\\.cu$")
+        SET_SOURCE_FILES_PROPERTIES(${GPU_CU_SOURCES} PROPERTIES LANGUAGE HIP)
+
+        # nvcc includes cuda_runtime.h implicitly in every .cu file.
+        # The GLM file limits inlining to functions marked inline (/Ob1 is
+        # the clang-cl spelling). At the default level the GLM reduction
+        # (float and double) compiles into a large device function whose
+        # long branches clobber the return address
+        # (llvm/llvm-project#224205). The double-precision fit was observed
+        # to hang on gfx1151 (Windows); the same code pattern is present in
+        # Linux RDNA builds, although no hang was seen there. Limiting
+        # inlining removes those long branches.
+        if(CMAKE_HIP_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+                SET(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} /FI${HIP_COMPAT_DIR}/cuda_runtime.h -w")
+                SET_SOURCE_FILES_PROPERTIES(src/gpu/h2o4gpuglm.cu PROPERTIES COMPILE_OPTIONS "/Ob1")
+        else()
+                SET(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -include ${HIP_COMPAT_DIR}/cuda_runtime.h -w")
+                SET_SOURCE_FILES_PROPERTIES(src/gpu/h2o4gpuglm.cu PROPERTIES COMPILE_OPTIONS "-finline-hint-functions")
+        endif()
+
+        TARGET_LINK_LIBRARIES(commonh2o4gpu PUBLIC hip::host)
+
+        ADD_LIBRARY(gpuh2o4gpu STATIC ${GPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu>)
+        TARGET_LINK_LIBRARIES(gpuh2o4gpu PUBLIC
+                ${HIP_LIBS}
+                ${BLAS_LIBRARIES})
+        if($ENV{USENVTX})
+            MESSAGE(STATUS "Building with NVTX support on (roctx).")
+            FIND_LIBRARY(NVTX_LIBRARY roctx64 REQUIRED)
+            FIND_PATH(ROCTX_INCLUDE_DIR roctracer/roctx.h REQUIRED)
+            # The CPU library compiles the same solver headers.
+            INCLUDE_DIRECTORIES(${ROCTX_INCLUDE_DIR})
+            TARGET_LINK_LIBRARIES(cpuh2o4gpu ${NVTX_LIBRARY})
+            TARGET_LINK_LIBRARIES(gpuh2o4gpu PUBLIC ${NVTX_LIBRARY})
+        endif()
+        if(OpenMP_CXX_FOUND)
+                # The HIP sources are compiled without OpenMP: clang's OpenMP
+                # runtime is not the GNU one the C++ sources use, and loading
+                # both in one process is unsafe. Their omp pragmas, which loop
+                # over GPUs, run serially.
+                TARGET_LINK_LIBRARIES(gpuh2o4gpu PUBLIC OpenMP::OpenMP_CXX)
+        endif()
+        # Header-only; their targets also carry device flags that would leak
+        # into the host C++ sources of this library.
+        TARGET_INCLUDE_DIRECTORIES(gpuh2o4gpu PRIVATE
+                $<TARGET_PROPERTY:hip::hipcub,INTERFACE_INCLUDE_DIRECTORIES>
+                $<TARGET_PROPERTY:roc::rocthrust,INTERFACE_INCLUDE_DIRECTORIES>)
+        #============= BUILD GPU LIBRARY
+
+        #============= GPU SWIG
+        SET_SOURCE_FILES_PROPERTIES(src/swig/ch2o4gpu_gpu.i PROPERTIES CPLUSPLUS ON)
+        SWIG_ADD_LIBRARY(ch2o4gpu_gpu LANGUAGE python SOURCES src/swig/ch2o4gpu_gpu.i)
+        # No OpenMP link flag: this module links with the HIP compiler, where
+        # -fopenmp would add clang's OpenMP runtime; gpuh2o4gpu brings the GNU one.
+        SWIG_LINK_LIBRARIES(ch2o4gpu_gpu gpuh2o4gpu
+                ${PYTHON_LIBRARIES})
+        # The ROCm library directory is an implicit link directory of the HIP
+        # compiler, so CMake leaves it out of the runpath; without it the
+        # module fails to load unless the loader already searches there.
+        SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_gpu_REAL_NAME} PROPERTIES
+                BUILD_RPATH $<TARGET_FILE_DIR:hip::amdhip64>
+                INSTALL_RPATH $<TARGET_FILE_DIR:hip::amdhip64>)
+        #============= GPU SWIG
+
+        #============= GTest
+        ADD_SUBDIRECTORY (tests/googletest)
+        enable_testing()
+        INCLUDE(GoogleTest)
+        include_directories(tests/googletest/include tests/googletest)
+
+        #============= Unit Tests
+        FILE(GLOB_RECURSE TEST_SOURCES
+        tests/cpp/gpu/*.cu
+        tests/cpp/gpu/*.cuh
+        tests/cpp/gpu/*.h
+        )
+        list(FILTER TEST_SOURCES EXCLUDE REGEX ".*/factorization/.*")
+        SET(TEST_CU_SOURCES tests/cpp/test_main.cu ${TEST_SOURCES})
+        list(FILTER TEST_CU_SOURCES INCLUDE REGEX ".*\\.cu$")
+        SET_SOURCE_FILES_PROPERTIES(${TEST_CU_SOURCES} PROPERTIES LANGUAGE HIP)
+
+        ADD_EXECUTABLE(h2o4gpu_test tests/cpp/test_main.cu ${TEST_SOURCES})
+        target_link_libraries(h2o4gpu_test
+        gtest
+        commonh2o4gpu
+        gpuh2o4gpu
+        ${BLAS_LIBRARIES})
 endif()

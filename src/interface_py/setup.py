@@ -18,7 +18,8 @@ class H2O4GPUBuild(build):
 
     def run(self):
         """Run the compilation"""
-        NVCC = os.popen("which nvcc").read() != ""
+        NVCC = os.popen("which nvcc").read() != "" or \
+            os.popen("which hipcc").read() != ""
         CPULIB = '_ch2o4gpu_cpu'
         GPULIB = '_ch2o4gpu_gpu'
 

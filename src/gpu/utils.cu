@@ -15,7 +15,9 @@
 #include "../common/logger.h"
 #include "include/cuda_utils2.h"
 #include "include/utils.cuh"
+#if !defined(__HIP_PLATFORM_AMD__)
 #include "nvml.h"
+#endif
 
 int cudaresetdevice(int wDev, int nDev) {
   if (nDev > 0) {
@@ -67,6 +69,81 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
                    unsigned long long *usedGpuUsage) {
   log_verbose(verbose, "Inside get_gpu_info_c c function");
 
+#if defined(__HIP_PLATFORM_AMD__)
+  // NVML is not available on ROCm. Report what the HIP runtime can tell us;
+  // utilization and per-process usage are reported as unsupported.
+  int count = 0;
+  hipError_t err = hipGetDeviceCount(&count);
+  if (err == hipErrorNoDevice) {
+    count = 0;
+  } else if (err != hipSuccess) {
+    log_fatal(verbose, "Failed to get device count: %s",
+              hipGetErrorString(err));
+    return 1;
+  }
+  *n_gpus = count;
+
+  log_verbose(verbose, "Getting info for %u devices", *n_gpus);
+
+  int current_device = 0;
+  if (*n_gpus > 0 && hipGetDevice(&current_device) != hipSuccess) {
+    current_device = 0;
+  }
+
+  const unsigned int max_pids = 2000;
+  for (int i = 0; i < *n_gpus; ++i) {
+    hipDeviceProp_t prop;
+    err = hipGetDeviceProperties(&prop, i);
+    if (err != hipSuccess) {
+      log_fatal(verbose, "Failed to get device %d properties: %s", i,
+                hipGetErrorString(err));
+      return 1;
+    }
+
+    gpu_percent_usage[i] = 0;
+    if (return_usage || return_all) {
+      log_warn(verbose, "Failed to get device %d utilization: Not Supported",
+               i);
+    }
+
+    if (return_memory || return_all) {
+      size_t free_mem = 0, total_mem = 0;
+      err = hipSetDevice(i);
+      if (err == hipSuccess) err = hipMemGetInfo(&free_mem, &total_mem);
+      if (err != hipSuccess) {
+        log_fatal(verbose, "Failed to get device %d memory info: %s", i,
+                  hipGetErrorString(err));
+        return 1;
+      }
+      gpu_total_memory[i] = total_mem;
+      gpu_free_memory[i] = free_mem;
+      log_verbose(verbose, "Device memory %i obtained.", i);
+    } else {
+      gpu_total_memory[i] = 0;
+      gpu_free_memory[i] = 0;
+    }
+
+    if (return_capability || return_all) {
+      majors[i] = prop.major;
+      minors[i] = prop.minor;
+      log_verbose(verbose, "i= %d majors= %d", i, majors[i]);
+    } else {
+      majors[i] = -1;
+      minors[i] = -1;
+    }
+
+    num_pids[i] = 0;
+    pids[i * max_pids] = 0;
+    usedGpuMemorys[i * max_pids] = 0;
+    num_pids_usage[i] = 0;
+    pids_usage[i * max_pids] = 0;
+    usedGpuUsage[i * max_pids] = 0;
+  }
+
+  if (*n_gpus > 0) hipSetDevice(current_device);
+
+  return 0;
+#else
   nvmlReturn_t rv;
   rv = nvmlInit();
 
@@ -302,4 +379,5 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
   }
 
   return 0;
+#endif
 }

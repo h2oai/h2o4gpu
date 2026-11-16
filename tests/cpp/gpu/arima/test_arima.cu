@@ -5,6 +5,20 @@
 #include "../gpu/arima/arima.h"
 #include "cuda_utils2.h"
 
+#include <cmath>
+
+// The expected values of the multi-parameter fits below are the float results
+// of cuSOLVER/cuBLAS. hipSOLVER/hipBLAS round differently in these small,
+// ill-conditioned least-squares solves; their float results are as close to
+// the float64 solution as the expected values are, but not within 4 ULP of
+// them.
+#if defined(__HIP_PLATFORM_AMD__)
+#define ASSERT_FIT_EQ(expected, actual) \
+  ASSERT_NEAR(expected, actual, 2e-5f * std::fabs(expected))
+#else
+#define ASSERT_FIT_EQ(expected, actual) ASSERT_FLOAT_EQ(expected, actual)
+#endif
+
 TEST(ARIMA, differencing) {
   const int length = 10;
   thrust::device_vector<float> data(length);
@@ -336,10 +350,10 @@ TEST(ARIMA, d_0_p_2_q_2_iter_1) {
 
   model.Fit(thrust::raw_pointer_cast(ts_data.data()));
 
-  ASSERT_FLOAT_EQ(-2.9589546f, model.Phi()[0]);
-  ASSERT_FLOAT_EQ(2.8828485f, model.Phi()[1]);
-  ASSERT_FLOAT_EQ(3.9598641f, model.Theta()[0]);
-  ASSERT_FLOAT_EQ(-0.61601555f, model.Theta()[1]);
+  ASSERT_FIT_EQ(-2.9589546f, model.Phi()[0]);
+  ASSERT_FIT_EQ(2.8828485f, model.Phi()[1]);
+  ASSERT_FIT_EQ(3.9598641f, model.Theta()[0]);
+  ASSERT_FIT_EQ(-0.61601555f, model.Theta()[1]);
 }
 
 // TEST(ARIMA, d_0_p_2_q_2_iter_2) {
@@ -369,6 +383,6 @@ TEST(ARIMA, d_1_p_1_q_1_iter_1) {
 
   model.Fit(thrust::raw_pointer_cast(ts_data.data()));
 
-  ASSERT_FLOAT_EQ(-1.0369391f, model.Phi()[0]);
-  ASSERT_FLOAT_EQ(1.1154615f, model.Theta()[0]);
+  ASSERT_FIT_EQ(-1.0369391f, model.Phi()[0]);
+  ASSERT_FIT_EQ(1.1154615f, model.Theta()[0]);
 }

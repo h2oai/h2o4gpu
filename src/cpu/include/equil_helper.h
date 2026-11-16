@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
 #include "gsl/gsl_blas.h"
 #include "gsl/gsl_rand.h"

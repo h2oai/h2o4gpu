@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <numeric>
 #include <random>
 #include <vector>
 #include "matrix/matrix.h"
@@ -20,6 +21,15 @@
 
 //  FIXME: This kmeans back-end is not working.
 //  FIXME: not really using seed.  Need to follow like gpu code.
+
+// Result buffers are handed to the caller, which releases them with free()
+// (the Python bindings give them to NumPy), so they must come from malloc.
+template <typename T>
+T *alloc_result(const std::vector<T> &v) {
+  T *p = static_cast<T *>(malloc(v.size() * sizeof(T)));
+  std::copy(v.begin(), v.end(), p);
+  return p;
+}
 
 template <typename T>
 void random_data(int verbose, std::vector<T> &array, int m, int n) {
@@ -310,11 +320,8 @@ int kmeans_fit(int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows,
   fflush(stderr);
 
   // copy result of centroids (sitting entirely on each device) back to host
-  std::vector<T> *ctr = new std::vector<T>(*l_centroids[0]);
-  *pred_centroids = ctr->data();
-
-  std::vector<int> *lbls = new std::vector<int>(*labels[0]);
-  *pred_labels = lbls->data();
+  *pred_centroids = alloc_result(*l_centroids[0]);
+  *pred_labels = alloc_result(*labels[0]);
 
   // debug
   int printcenters = 0;
@@ -322,7 +329,7 @@ int kmeans_fit(int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows,
     for (unsigned int ii = 0; ii < k; ii++) {
       fprintf(stderr, "ii=%d of k=%d ", ii, k);
       for (unsigned int jj = 0; jj < d; jj++) {
-        fprintf(stderr, "%g ", (*ctr)[d * ii + jj]);
+        fprintf(stderr, "%g ", (*pred_centroids)[d * ii + jj]);
       }
       fprintf(stderr, "\n");
       fflush(stderr);
@@ -395,8 +402,7 @@ int kmeans_predict(int verbose, int cpu_idtry, int n_cputry, size_t rows,
     kmeans::relabel(*data[q], n / n_cpu, *pairwise_distances[q], k, *labels[q]);
   }
 
-  std::vector<int> *ctr = new std::vector<int>(*labels[0]);
-  *pred_labels = ctr->data();
+  *pred_labels = alloc_result(*labels[0]);
 
   for (int q = 0; q < n_cpu; q++) {
     delete (data[q]);
@@ -460,8 +466,7 @@ int kmeans_transform(int verbose, int gpu_id, int n_gpu, size_t rows,
                               *pairwise_distances[q]);
   }
 
-  std::vector<T> *ctr = new std::vector<T>(*pairwise_distances[0]);
-  *preds = ctr->data();
+  *preds = alloc_result(*pairwise_distances[0]);
 
   for (int q = 0; q < n_cpu; q++) {
     delete (data[q]);

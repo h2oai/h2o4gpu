@@ -10,7 +10,7 @@
 #include <limits>
 #include <vector>
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/inner_product.h>
@@ -682,11 +682,11 @@ void ProjSubgradEval(const std::vector<FunctionObj<T> > &f_obj, const T *x_in,
     v_out[i] = ProjSubgradEval(f_obj[i], v_in[i], x_in[i]);
 }
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
 template <typename T>
 struct ProxEvalF : thrust::binary_function<FunctionObj<T>, T, T> {
   T rho;
-  __device__ ProxEvalF(T rho) : rho(rho) { }
+  __host__ __device__ ProxEvalF(T rho) : rho(rho) { }
   __device__ T operator()(const FunctionObj<T> &f_obj, T x) {
     return ProxEval(f_obj, x, rho);
   }
@@ -732,7 +732,7 @@ void ProjSubgradEval(const thrust::device_vector<FunctionObj<T> > &f_obj,
       thrust::device_pointer_cast(v_out), ProjSubgradF<T>());
 }
 
-#endif  // __CUDACC__
+#endif  // __CUDACC__ || __HIPCC__
 
 #endif  // PROX_LIB_H_
 

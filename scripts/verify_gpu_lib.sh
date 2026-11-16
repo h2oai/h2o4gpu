@@ -43,11 +43,25 @@ if readelf -S "$so" 2>/dev/null | grep -q '\.debug_'; then
 fi
 
 # 2. Fatbin / SASS cubins must still be readable.
+if readelf -S "$so" 2>/dev/null | grep -q '\.hip_fatbin'; then
+    # ROCm build: the device code objects live in the .hip_fatbin section.
+    # A compressed bundle (--offload-compress) does not show the target names.
+    if strings -n 4 "$so" 2>/dev/null | grep -q '^CCOB'; then
+        echo "OK: compressed AMD GPU code object bundle intact after strip"
+    else
+        archs=$(strings -n 6 "$so" 2>/dev/null | grep -oE 'amdgcn-amd-amdhsa--gfx[0-9a-f]+' | sort -u)
+        if [ -z "$archs" ]; then
+            fail "no AMD GPU code objects found in $so after strip -- device code lost!"
+        fi
+        echo "OK: AMD GPU code objects intact after strip: $(echo $archs | tr '\n' ' ')"
+    fi
+else
 archs=$(cuobjdump --list-elf "$so" 2>/dev/null | grep -oE 'sm_[0-9]+' | sort -u)
 if [ -z "$archs" ]; then
     fail "no SASS cubins found in $so after strip -- device code lost!"
 fi
 echo "OK: SASS cubins intact after strip: $(echo $archs | tr '\n' ' ')"
+fi
 
 # 3. Python module init symbol must survive (else the module is not importable).
 if ! nm -D "$so" 2>/dev/null | grep -q 'PyInit__ch2o4gpu_gpu'; then

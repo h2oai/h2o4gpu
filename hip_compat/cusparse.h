@@ -1,0 +1,46 @@
+// cuSPARSE names used by h2o4gpu, mapped to hipSPARSE.
+#pragma once
+
+#include "cuda_runtime.h"
+#include <hipsparse/hipsparse.h>
+
+#define cusparseHandle_t hipsparseHandle_t
+#define cusparseStatus_t hipsparseStatus_t
+#define cusparseOperation_t hipsparseOperation_t
+#define cusparseMatDescr_t hipsparseMatDescr_t
+#define cusparseSpMatDescr_t hipsparseSpMatDescr_t
+#define cusparseDnVecDescr_t hipsparseDnVecDescr_t
+
+#define CUSPARSE_STATUS_SUCCESS HIPSPARSE_STATUS_SUCCESS
+#define CUSPARSE_STATUS_NOT_INITIALIZED HIPSPARSE_STATUS_NOT_INITIALIZED
+#define CUSPARSE_STATUS_ALLOC_FAILED HIPSPARSE_STATUS_ALLOC_FAILED
+#define CUSPARSE_STATUS_INVALID_VALUE HIPSPARSE_STATUS_INVALID_VALUE
+#define CUSPARSE_STATUS_ARCH_MISMATCH HIPSPARSE_STATUS_ARCH_MISMATCH
+#define CUSPARSE_STATUS_MAPPING_ERROR HIPSPARSE_STATUS_MAPPING_ERROR
+#define CUSPARSE_STATUS_EXECUTION_FAILED HIPSPARSE_STATUS_EXECUTION_FAILED
+#define CUSPARSE_STATUS_INTERNAL_ERROR HIPSPARSE_STATUS_INTERNAL_ERROR
+#define CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED \
+  HIPSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED
+
+#define CUSPARSE_OPERATION_NON_TRANSPOSE HIPSPARSE_OPERATION_NON_TRANSPOSE
+#define CUSPARSE_OPERATION_TRANSPOSE HIPSPARSE_OPERATION_TRANSPOSE
+#define CUSPARSE_OPERATION_CONJUGATE_TRANSPOSE \
+  HIPSPARSE_OPERATION_CONJUGATE_TRANSPOSE
+#define CUSPARSE_ACTION_NUMERIC HIPSPARSE_ACTION_NUMERIC
+#define CUSPARSE_INDEX_32I HIPSPARSE_INDEX_32I
+#define CUSPARSE_INDEX_BASE_ZERO HIPSPARSE_INDEX_BASE_ZERO
+#define CUSPARSE_SPMV_ALG_DEFAULT HIPSPARSE_SPMV_ALG_DEFAULT
+#define CUSPARSE_CSR2CSC_ALG1 HIPSPARSE_CSR2CSC_ALG1
+
+#define cusparseCreate hipsparseCreate
+#define cusparseDestroy hipsparseDestroy
+#define cusparseCreateMatDescr hipsparseCreateMatDescr
+#define cusparseDestroyMatDescr hipsparseDestroyMatDescr
+#define cusparseCreateCsr hipsparseCreateCsr
+#define cusparseDestroySpMat hipsparseDestroySpMat
+#define cusparseCreateDnVec hipsparseCreateDnVec
+#define cusparseDestroyDnVec hipsparseDestroyDnVec
+#define cusparseSpMV hipsparseSpMV
+#define cusparseSpMV_bufferSize hipsparseSpMV_bufferSize
+#define cusparseCsr2cscEx2 hipsparseCsr2cscEx2
+#define cusparseCsr2cscEx2_bufferSize hipsparseCsr2cscEx2_bufferSize

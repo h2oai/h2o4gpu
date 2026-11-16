@@ -36,20 +36,21 @@ all: prep
 	# for incorporating xgboost and lightgbm builds
 	rm -rf ./xgboost
 	rm -rf ./xgboost_prev
-	ln -sf ../../xgboost/python-package/xgboost ./xgboost
-	ln -sf ../../xgboost_prev/python-package/xgboost ./xgboost_prev
-	rm -rf ../../xgboost/python-package/xgboost/src/
+	ln -sf ../../$(XGBOOST_DIR)/python-package/xgboost ./xgboost
+	# The previous xgboost is not built with USE_HIP=ON, so it is not bundled.
+	if [ "$(USE_HIP)" != "ON" ]; then ln -sf ../../xgboost_prev/python-package/xgboost ./xgboost_prev; fi
+	rm -rf ../../$(XGBOOST_DIR)/python-package/xgboost/src/
 	rm -rf ../../xgboost_prev/python-package/xgboost/src/
 	# LightGBM is optional: only bundle it if its python-package was built.
 	rm -f lightgbm_gpu lightgbm_cpu
-	if [ -e ../../LightGBM/python-package/dist_gpu/lightgbm ]; then ln -sf ../../LightGBM/python-package/dist_gpu/lightgbm lightgbm_gpu; else echo "LightGBM (gpu) not built - omitting from wheel"; fi
-	if [ -e ../../LightGBM/python-package/dist_cpu/lightgbm ]; then ln -sf ../../LightGBM/python-package/dist_cpu/lightgbm lightgbm_cpu; else echo "LightGBM (cpu) not built - omitting from wheel"; fi
+	if [ -e ../../$(LIGHTGBM_DIR)/python-package/dist_gpu/lightgbm ]; then ln -sf ../../$(LIGHTGBM_DIR)/python-package/dist_gpu/lightgbm lightgbm_gpu; else echo "LightGBM (gpu) not built - omitting from wheel"; fi
+	if [ -e ../../$(LIGHTGBM_DIR)/python-package/dist_cpu/lightgbm ]; then ln -sf ../../$(LIGHTGBM_DIR)/python-package/dist_cpu/lightgbm lightgbm_cpu; else echo "LightGBM (cpu) not built - omitting from wheel"; fi
 
 	$(PYTHON) setup.py sdist bdist_wheel
 
 	# update build with lightgbm shared library (only if LightGBM was built)
-	if [ -e ../../LightGBM/python-package/dist_gpu/lightgbm/lib_lightgbm.so ]; then mkdir -p build/lib/lightgbm_gpu/ ; cd build/lib/lightgbm_gpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_gpu/lightgbm/lib_lightgbm.so . ; cd ../../../ ; fi
-	if [ -e ../../LightGBM/python-package/dist_cpu/lightgbm/lib_lightgbm.so ]; then mkdir -p build/lib/lightgbm_cpu/ ; cd build/lib/lightgbm_cpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_cpu/lightgbm/lib_lightgbm.so . ; cd ../../../ ; fi
+	if [ -e ../../$(LIGHTGBM_DIR)/python-package/dist_gpu/lightgbm/lib_lightgbm.so ]; then mkdir -p build/lib/lightgbm_gpu/ ; cd build/lib/lightgbm_gpu/ ; ln -sf ../../../../../$(LIGHTGBM_DIR)/python-package/dist_gpu/lightgbm/lib_lightgbm.so . ; cd ../../../ ; fi
+	if [ -e ../../$(LIGHTGBM_DIR)/python-package/dist_cpu/lightgbm/lib_lightgbm.so ]; then mkdir -p build/lib/lightgbm_cpu/ ; cd build/lib/lightgbm_cpu/ ; ln -sf ../../../../../$(LIGHTGBM_DIR)/python-package/dist_cpu/lightgbm/lib_lightgbm.so . ; cd ../../../ ; fi
 
 	# Make wheel with other builds added
 	rm -rf dist/*.whl

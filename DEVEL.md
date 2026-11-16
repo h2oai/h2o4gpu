@@ -185,9 +185,48 @@ To build the code in debug mode set `CMAKE_BUILD_TYPE=Debug` when building e.g. 
 
 To enable `nvToolsExt` set the `USENVTX` variable e.g. `make fullinstall USENVTX=ON`
 
+With `USE_HIP=ON` the same switches emit roctx ranges instead: `USENVTX` links `libroctx64`, and code built with `USE_NVTX` defined (e.g. `-DCMAKE_CXX_FLAGS=-DUSE_NVTX -DCMAKE_HIP_FLAGS=-DUSE_NVTX`) marks its ranges with `roctxRangePushA`/`roctxRangePop`. `rocprofv3 --marker-trace` records them.
+
 ##### DEV_BUILD
 
 To expedite the building process in dev setup you can set `DEV_BUILD=ON` e.g. `make fullinstall DEV_BUILD=ON`. This will build the binary with only single CUDA compute capability (currently 6.1).
+
+##### USE_HIP (AMD GPUs)
+
+To build the GPU library for AMD GPUs with ROCm instead of CUDA, install ROCm (with hipBLAS, hipSPARSE, hipSOLVER, hipRAND, hipCUB and rocThrust) and set `USE_HIP=ON`, e.g. `make cpp USE_HIP=ON`. Point CMake at ROCm with `CMAKE_PREFIX_PATH`, or put `/opt/rocm/bin` on `PATH`:
+
+```
+export CMAKE_PREFIX_PATH=/opt/rocm
+make cpp USE_HIP=ON
+make testunit USE_HIP=ON
+```
+
+The GPU architecture is detected from the GPUs in the machine. To build for another one, configure directly with CMake:
+
+```
+cmake -S . -B build -DUSE_CUDA=OFF -DUSE_HIP=ON -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_HIP_ARCHITECTURES=gfx90a
+cmake --build build -j
+```
+
+With `USE_HIP=ON`, `make lightgbm_gpu` and `make lightgbm_cpu` build LightGBM from the `LightGBM_rocm` submodule (upstream LightGBM, which supports ROCm with `device_type='cuda'`) with the h2o changes in `patches/LightGBM_rocm` applied, instead of the `LightGBM` submodule.
+
+Likewise `make xgboost` builds XGBoost from the `xgboost_rocm` submodule (AMD's ROCm branch of XGBoost; use `device='cuda'` or `device='gpu'`) with the h2o changes in `patches/xgboost_rocm` applied, instead of the `xgboost` submodule:
+
+```
+git submodule update --init --recursive LightGBM_rocm xgboost_rocm
+make lightgbm_gpu lightgbm_cpu install_lightgbm_gpu install_lightgbm_cpu USE_HIP=ON
+make xgboost install_xgboost USE_HIP=ON
+```
+
+The previous XGBoost (`xgboost_prev`) is not built or bundled with `USE_HIP=ON`, so `h2o4gpu.util.xgboost_migration.load_pkl` cannot convert models pickled by XGBoost 0.90 there.
+
+On Windows, configure with CMake 4 and ROCm's `clang-cl` as the C, C++ and HIP compiler, and OpenBLAS from vcpkg. This builds the GPU library, the `_ch2o4gpu_gpu`/`_ch2o4gpu_cpu` Python modules and `h2o4gpu_test.exe`; the Makefile targets and the wheel are Linux-only. Python does not search `PATH` for the modules' DLLs, so add the ROCm `bin` directory with `os.add_dll_directory` before importing them.
+
+```
+set ROCM=<ROCm install root>
+cmake -G Ninja -S . -B build -DUSE_CUDA=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 -DCMAKE_PREFIX_PATH=%ROCM% -DCMAKE_C_COMPILER=%ROCM%/lib/llvm/bin/clang-cl.exe -DCMAKE_CXX_COMPILER=%ROCM%/lib/llvm/bin/clang-cl.exe -DCMAKE_HIP_COMPILER=%ROCM%/lib/llvm/bin/clang-cl.exe -DCMAKE_TOOLCHAIN_FILE=<vcpkg>/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
 
 ##### NCCL
 

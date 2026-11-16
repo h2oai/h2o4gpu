@@ -92,7 +92,7 @@ update_submodule:
 cpp:
 	mkdir -p build && \
 	cd build && \
-	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
+	cmake -DDEV_BUILD=${DEV_BUILD} $(CMAKE_GPU_FLAGS) ../ && \
 	make -j`nproc` && \
 	if [ "${DEV_BUILD}" != "ON" ]; then \
 		strip --strip-unneeded _ch2o4gpu_*pu.so && \
@@ -106,23 +106,60 @@ py: build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
 
 .PHONY: xgboost_prev
+ifeq ($(USE_HIP),ON)
+xgboost_prev:
+	@echo "----- XGboost previous version is not built with USE_HIP=ON -----"
+else
 xgboost_prev:
 	@echo "----- Building XGboost previous version target $(XGBOOST_TARGET) -----"
 	cd xgboost_prev; sed -i -e 's/35;50;52;60;61;70/35;37;50;52;53;60;61;62;70;75/g' cmake/Utils.cmake; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
+endif
+
+.PHONY: xgboost_rocm
+xgboost_rocm:
+	@echo "----- Building XGboost (ROCm) -----"
+	cd xgboost_rocm && \
+	(git apply --reverse --check ../patches/xgboost_rocm/*.patch 2>/dev/null || git apply ../patches/xgboost_rocm/*.patch) && \
+	cmake -S . -B build -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release && \
+	cmake --build build -j`nproc` && \
+	cd python-package && rm -rf dist && $(PYTHON) -m build --wheel --config-setting use_hip=True . -o dist
 
 .PHONY: xgboost
+ifeq ($(USE_HIP),ON)
+xgboost: xgboost_rocm
+else
 xgboost:
 	@echo "----- Building XGboost target $(XGBOOST_TARGET) -----"
 	# xgboost 2.1.4 fork: GPU archs (incl. Blackwell sm_100/sm_120) are set in
 	# the submodule's Makefile2 via -DGPU_COMPUTE_VER; the old cmake/Utils.cmake
 	# `set(flags ...)` sed no longer applies (2.x has no such line).
 	cd xgboost; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
+endif
 
 fullinstall-xgboost: xgboost install_xgboost
 
 fullinstall-xgboost-prev: xgboost_prev install_xgboost_prev
 
+.PHONY: lightgbm_rocm
+lightgbm_rocm:
+	@echo "----- Building LightGBM (ROCm) -----"
+	cd LightGBM_rocm && \
+	(git apply --reverse --check ../patches/LightGBM_rocm/*.patch 2>/dev/null || git apply ../patches/LightGBM_rocm/*.patch) && \
+	rm -rf dist && PATH=$(dir $(shell which $(PYTHON))):$$PATH sh build-python.sh bdist_wheel --rocm && \
+	rm -rf python-package/dist_gpu && mv dist python-package/dist_gpu
+
+.PHONY: lightgbm_rocm_cpu
+lightgbm_rocm_cpu:
+	@echo "----- Building LightGBM (ROCm build, CPU) -----"
+	cd LightGBM_rocm && \
+	(git apply --reverse --check ../patches/LightGBM_rocm/*.patch 2>/dev/null || git apply ../patches/LightGBM_rocm/*.patch) && \
+	rm -rf dist && PATH=$(dir $(shell which $(PYTHON))):$$PATH sh build-python.sh bdist_wheel && \
+	rm -rf python-package/dist_cpu && mv dist python-package/dist_cpu
+
 .PHONY: lightgbm_gpu
+ifeq ($(USE_HIP),ON)
+lightgbm_gpu: lightgbm_rocm
+else
 lightgbm_gpu:
 	@echo "----- Building LightGBM (GPU) target $(LIGHTGBM_TARGET) -----"
 	@echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
@@ -165,8 +202,12 @@ lightgbm_gpu:
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
 	cd python-package && rm -rf dist_gpu && mv dist dist_gpu; \
 	fi
+endif
 
 .PHONY: lightgbm_cpu
+ifeq ($(USE_HIP),ON)
+lightgbm_cpu: lightgbm_rocm_cpu
+else
 lightgbm_cpu:
 	@echo "----- Building LightGBM (CPU) target $(LIGHTGBM_TARGET) -----"
 	@echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
@@ -198,6 +239,7 @@ lightgbm_cpu:
 	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
 	cd python-package && rm -rf dist_cpu && mv dist dist_cpu ;
+endif
 
 fullinstall-lightgbm:
 	$(XGB_PROLOGUE) 'make lightgbm_gpu'
@@ -226,20 +268,25 @@ build_py: update_submodule clean_py py # avoid cpp
 # INSTALL TARGETS
 #########################################
 
+ifeq ($(USE_HIP),ON)
+install_xgboost_prev:
+	@echo "----- XGboost previous version is not built with USE_HIP=ON -----"
+else
 install_xgboost_prev:
 	@echo "----- pip install xgboost previous version built locally -----"
 	cd xgboost_prev/python-package/dist && $(PYTHON) -m pip install xgboost-*.whl --no-deps --target ../
+endif
 
 install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
-	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*.whl --upgrade --no-deps --target ../
+	cd $(XGBOOST_DIR)/python-package/dist && $(PYTHON) -m pip install xgboost-*.whl --upgrade --no-deps --target ../
 
 install_lightgbm_gpu:
 	@echo "----- pip install lightgbm_gpu built locally -----"
-	cd LightGBM/python-package/dist_gpu && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --upgrade --no-deps --target .
+	cd $(LIGHTGBM_DIR)/python-package/dist_gpu && $(PYTHON) -m pip install lightgbm*-py3-none-*.whl --upgrade --no-deps --target .
 install_lightgbm_cpu:
 	@echo "----- pip install lightgbm (for CPU) built locally -----"
-	cd LightGBM/python-package/dist_cpu && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --upgrade --no-deps --target .
+	cd $(LIGHTGBM_DIR)/python-package/dist_cpu && $(PYTHON) -m pip install lightgbm*-py3-none-*.whl --upgrade --no-deps --target .
 
 install_py:
 	$(MAKE) -j install -C src/interface_py
@@ -577,7 +624,7 @@ dotestbig:
 testunit:
 	mkdir -p build && \
 	cd build && \
-	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
+	cmake -DDEV_BUILD=${DEV_BUILD} $(CMAKE_GPU_FLAGS) ../ && \
 	make h2o4gpu_test -j$(nproc) && \
 	./h2o4gpu_test
 #########################################

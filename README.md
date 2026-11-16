@@ -27,6 +27,8 @@ Ensure to reboot after installing the new nvidia drivers.
 
 * Nvidia GPU with Compute Capability >= 3.5 ([Capability Lookup](https://developer.nvidia.com/cuda-gpus)).
 
+* Or an AMD GPU supported by [ROCm](https://rocm.docs.amd.com), building from source (see [DEVEL.md](DEVEL.md#use_hip-amd-gpus)).
+
 * For advanced features, like handling rows/32 > 2^16 (i.e., rows > 2,097,152) in K-means, need Capability >= 5.2
 
 * For building the R package, `libcurl4-openssl-dev`, `libssl-dev`, and `libxml2-dev` are needed.

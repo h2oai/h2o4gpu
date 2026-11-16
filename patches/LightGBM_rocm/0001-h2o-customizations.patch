@@ -1,0 +1,98 @@
+The C++ changes of h2oai/LightGBM (tag H2O_v4.6.0.2, on top of v4.6.0),
+rebased onto upstream LightGBM v4.7.0 for the ROCm build:
+
+- Boosting::GetTrees() and Tree split accessors, used for MOJO export.
+- DAI_LIGHTGBM_AVOID_LOGGER: print log messages even when a log callback is set.
+- FindGroups(): account for the default bin when counting bins per group.
+
+The Python changes of the fork (no dask import at package import, no
+pkg_resources) are already upstream behaviour in v4.7.0.
+
+diff --git a/include/LightGBM/boosting.h b/include/LightGBM/boosting.h
+index 8bc1b63e..42c6f3f0 100644
+--- a/include/LightGBM/boosting.h
++++ b/include/LightGBM/boosting.h
+@@ -7,6 +7,7 @@
+ #define LIGHTGBM_INCLUDE_LIGHTGBM_BOOSTING_H_
+ 
+ #include <LightGBM/config.h>
++#include <LightGBM/tree.h>
+ #include <LightGBM/meta.h>
+ 
+ #include <string>
+@@ -316,6 +317,8 @@ class LIGHTGBM_EXPORT Boosting {
+   */
+   static Boosting* CreateBoosting(const std::string& type, const char* filename, const std::string& device_type, const int num_gpu);
+ 
++  virtual const std::vector<std::unique_ptr<Tree>>& GetTrees() const = 0;
++
+   virtual std::string GetLoadedParam() const = 0;
+ 
+   virtual bool IsLinear() const { return false; }
+diff --git a/include/LightGBM/tree.h b/include/LightGBM/tree.h
+index 74101ddb..64143936 100644
+--- a/include/LightGBM/tree.h
++++ b/include/LightGBM/tree.h
+@@ -162,6 +162,14 @@ class Tree {
+ 
+   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
+ 
++  inline double split_threshold(int split_idx) const { return threshold_[split_idx]; }
++
++  inline int split_left_child(int split_idx) const { return left_child_[split_idx]; }
++
++  inline int split_right_child(int split_idx) const { return right_child_[split_idx]; }
++
++  inline int8_t split_decision_type(int split_idx) const { return decision_type_[split_idx]; }
++  
+   inline double internal_value(int node_idx) const {
+     return internal_value_[node_idx];
+   }
+diff --git a/include/LightGBM/utils/log.h b/include/LightGBM/utils/log.h
+index 84d1efdb..0eab0320 100644
+--- a/include/LightGBM/utils/log.h
++++ b/include/LightGBM/utils/log.h
+@@ -146,7 +146,7 @@ class Log {
+ // R code should write back to R's output stream,
+ // otherwise to stdout
+ #ifndef LGB_R_BUILD
+-      if (GetLogCallBack() == nullptr) {
++      if (GetLogCallBack() == nullptr || getenv("DAI_LIGHTGBM_AVOID_LOGGER")) {
+         printf("[LightGBM] [%s] ", level_str);
+         vprintf(format, val);
+         printf("\n");
+diff --git a/src/boosting/gbdt.h b/src/boosting/gbdt.h
+index 4d6cf8cf..fd0ffb51 100644
+--- a/src/boosting/gbdt.h
++++ b/src/boosting/gbdt.h
+@@ -466,6 +466,12 @@ class GBDT : public GBDTBase {
+   */
+   const char* SubModelName() const override { return "tree"; }
+ 
++  /*!
++  * \brief Get the trees contained in this boosting class. Used for MOJO writing.
++  */
++  inline const std::vector<std::unique_ptr<Tree>>& GetTrees() const override {
++    return models_;
++  }
+   bool IsLinear() const override { return linear_tree_; }
+ 
+   inline std::string ParserConfigStr() const override {return parser_config_str_;}
+diff --git a/src/io/dataset.cpp b/src/io/dataset.cpp
+index c0709a90..fbf142f0 100644
+--- a/src/io/dataset.cpp
++++ b/src/io/dataset.cpp
+@@ -134,9 +134,11 @@ std::vector<std::vector<int>> FindGroups(
+     const data_size_t cur_non_zero_cnt =
+         is_filtered_feature ? 0 : num_per_col[fidx];
+     std::vector<int> available_groups;
+-    for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
+-      auto cur_num_bin = group_num_bin[gid] + bin_mappers[fidx]->num_bin() +
++    auto bin_part = bin_mappers[fidx]->num_bin() +
++                         (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0) +
+                          (bin_mappers[fidx]->GetMostFreqBin() == 0 ? -1 : 0);
++    for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
++      auto cur_num_bin = group_num_bin[gid] + bin_part;
+       if (group_total_data_cnt[gid] + cur_non_zero_cnt <=
+           total_sample_cnt + single_val_max_conflict_cnt) {
+         if (!is_use_gpu || cur_num_bin <= max_bin_per_group) {
